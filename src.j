@@ -1,1 +1,1 @@
-test("hello", asd("test"))
+test('Hello', 'world')

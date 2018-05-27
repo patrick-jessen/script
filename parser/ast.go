@@ -3,7 +3,7 @@ package parser
 type AstNode interface{}
 
 type IdentifierNode struct {
-	Name string
+	Name AstNode
 }
 
 type FuncCallNode struct {
@@ -12,7 +12,7 @@ type FuncCallNode struct {
 }
 
 type StringNode struct {
-	Value string
+	Value AstNode
 }
 
 type ArgListNode struct {

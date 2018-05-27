@@ -3,10 +3,18 @@ package parser
 import (
 	"fmt"
 	"io/ioutil"
+	"reflect"
+	"regexp"
 )
 
+type ParseFunc func(*Parser) AstNode
+
 type Parser struct {
-	src []byte
+	src    []byte
+	iter   int
+	err    error
+	potErr error
+	expect string
 }
 
 // New creates a new parser.
@@ -19,152 +27,242 @@ func New(file string) *Parser {
 	return p
 }
 
-// Parse parses the source and returns the AST.
-func (p *Parser) Parse() (AstNode, error) {
-	_, ast, err := p.parseFunctionCall(0)
-	return ast, err
+func (p *Parser) clone() *Parser {
+	return &Parser{
+		src:  p.src,
+		iter: p.iter,
+		err:  nil,
+	}
 }
 
-func (p *Parser) newError(pos int, format string, args ...interface{}) error {
-	return &parserError{
+func (p *Parser) One(a interface{}) AstNode {
+	defer func() { p.expect = "" }()
+
+	switch a.(type) {
+	case func(*Parser) AstNode:
+		return p.oneFn(a.(func(*Parser) AstNode))
+	case string:
+		return p.oneStr(a.(string))
+	case *regexp.Regexp:
+		return p.oneReg(a.(*regexp.Regexp))
+	default:
+		panic(reflect.TypeOf(a))
+	}
+}
+
+func (p *Parser) Opt(a interface{}) AstNode {
+	defer func() { p.expect = "" }()
+
+	switch a.(type) {
+	case func(*Parser) AstNode:
+		return p.optFn(a.(func(*Parser) AstNode))
+	case string:
+		return p.optStr(a.(string))
+	case *regexp.Regexp:
+		return p.optReg(a.(*regexp.Regexp))
+	default:
+		panic(reflect.TypeOf(a))
+	}
+}
+func (p *Parser) Any(a interface{}) AstNode {
+	defer func() { p.expect = "" }()
+
+	switch a.(type) {
+	case func(*Parser) AstNode:
+		return p.anyFn(a.(func(*Parser) AstNode))
+	case string:
+		return p.anyStr(a.(string))
+	case *regexp.Regexp:
+		return p.anyReg(a.(*regexp.Regexp))
+	default:
+		panic(reflect.TypeOf(a))
+	}
+}
+func (p *Parser) Expect(str string) {
+	p.expect = str
+}
+
+func (p *Parser) oneFn(fn ParseFunc) AstNode {
+	if p.err != nil {
+		return nil
+	}
+	newp := p.clone()
+	res := fn(newp)
+	if newp.err != nil {
+		p.err = newp.err
+		p.potErr = newp.potErr
+		return nil
+	}
+	p.iter = newp.iter
+	return res
+}
+func (p *Parser) optFn(fn ParseFunc) AstNode {
+	if p.err != nil {
+		return nil
+	}
+	newp := p.clone()
+	res := fn(newp)
+	if newp.err != nil {
+		p.potErr = newp.err
+		return nil
+	}
+	p.potErr = newp.potErr
+	p.iter = newp.iter
+	return res
+}
+func (p *Parser) anyFn(fn ParseFunc) []AstNode {
+	if p.err != nil {
+		return nil
+	}
+	newp := p.clone()
+	var results []AstNode
+
+	for {
+		res := fn(newp)
+		if newp.err != nil {
+			p.potErr = newp.err
+			return results
+		}
+		results = append(results, res)
+		p.iter = newp.iter
+	}
+}
+
+func (p *Parser) oneStr(str string) string {
+	if p.err != nil {
+		return ""
+	}
+	for i := 0; i < len(str); i++ {
+		if p.iter == len(p.src) {
+			p.error(p.iter, "expected %v", str)
+			return ""
+		}
+
+		if p.src[p.iter] != str[i] {
+			p.error(p.iter, "expected %v", str)
+			return ""
+		}
+
+		p.iter++
+	}
+	return str
+}
+func (p *Parser) optStr(str string) string {
+	if p.err != nil {
+		return ""
+	}
+	for i := 0; i < len(str); i++ {
+		if p.iter == len(p.src) {
+			p.potError(p.iter, "expected %v", str)
+			return ""
+		}
+
+		if p.src[p.iter] != str[i] {
+			p.potError(p.iter, "expected %v", str)
+			return ""
+		}
+
+		p.iter++
+	}
+	return str
+}
+func (p *Parser) anyStr(str string) []string {
+	if p.err != nil {
+		return nil
+	}
+	var results []string
+	for {
+		for i := 0; i < len(str); i++ {
+			if p.iter == len(p.src) {
+				p.potError(p.iter, "expected %v", str)
+				return results
+			}
+
+			if p.src[p.iter] != str[i] {
+				p.potError(p.iter, "expected %v", str)
+				return results
+			}
+
+			p.iter++
+		}
+		results = append(results, str)
+	}
+}
+
+func (p *Parser) oneReg(r *regexp.Regexp) string {
+	if p.err != nil {
+		return ""
+	}
+	match := r.Find(p.src[p.iter:])
+	if match == nil {
+		p.error(p.iter, "expected %v", r)
+		return ""
+	}
+	p.iter += len(match)
+	return string(match)
+}
+func (p *Parser) optReg(r *regexp.Regexp) string {
+	if p.err != nil {
+		return ""
+	}
+	match := r.Find(p.src[p.iter:])
+	if match == nil {
+		p.potError(p.iter, "expected %v", r)
+		return ""
+	}
+	p.iter += len(match)
+	return string(match)
+}
+func (p *Parser) anyReg(r *regexp.Regexp) []string {
+	if p.err != nil {
+		return nil
+	}
+	var results []string
+	for {
+		match := r.Find(p.src[p.iter:])
+		if match == nil {
+			p.potError(p.iter, "expected %v", r)
+			return results
+		}
+
+		results = append(results, string(match))
+		p.iter += len(match)
+	}
+}
+
+func (p *Parser) error(pos int, format string, args ...interface{}) {
+	if len(p.expect) > 0 {
+		args[0] = p.expect
+	}
+
+	p.err = &parserError{
+		Message:  fmt.Sprintf(format, args...),
+		Parser:   p,
+		Position: pos,
+	}
+}
+func (p *Parser) potError(pos int, format string, args ...interface{}) {
+	if len(p.expect) > 0 {
+		args[0] = p.expect
+	}
+
+	if p.potErr != nil {
+		if p.potErr.(*parserError).Position > pos {
+			return
+		}
+	}
+	p.potErr = &parserError{
 		Message:  fmt.Sprintf(format, args...),
 		Parser:   p,
 		Position: pos,
 	}
 }
 
-func (p *Parser) parseFunctionCall(start int) (int, AstNode, error) {
-	i := start
-
-	var err error
-	var ident AstNode
-
-	i, ident, err = p.parseIdentifier(i)
-	if ident == nil {
-		return start, nil, p.newError(i, "expected identifier")
-	}
-
-	if p.src[i] != '(' {
-		return start, nil, p.newError(i, "expected '('")
-	}
-	i++
-
-	var args AstNode
-	if p.src[i] != ')' {
-		i, args, err = p.parseArgList(i)
-		if err != nil {
-			return start, nil, err
+func (p *Parser) Error() error {
+	if p.potErr != nil {
+		if p.potErr.(*parserError).Position > p.err.(*parserError).Position {
+			return p.potErr
 		}
 	}
-
-	if p.src[i] != ')' {
-		return start, nil, p.newError(i, "expected ')'")
-	}
-	i++
-
-	return i, &FuncCallNode{
-		Ident: ident,
-		Args:  args,
-	}, nil
-}
-
-func (p *Parser) parseIdentifier(start int) (int, AstNode, error) {
-	i := start
-
-	c := p.src[i]
-	if c < 65 || (c > 90 && c < 97) || c > 122 {
-		return start, nil, p.newError(i, "identifier must start with a letter")
-	}
-	i++
-
-	for i < len(p.src) {
-		c = p.src[i]
-		if c < 48 || (c > 57 && c < 65) || (c > 90 && c < 97) || c > 122 {
-			break
-		}
-		i++
-	}
-
-	return i, &IdentifierNode{Name: string(p.src[start:i])}, nil
-}
-
-func (p *Parser) parseArg(start int) (int, AstNode, error) {
-	i := start
-	var arg AstNode
-	var err error
-
-	i, arg, err = p.parseString(start)
-	if err == nil {
-		return i, arg, err
-	}
-
-	i, arg, err = p.parseFunctionCall(start)
-	if err == nil {
-		return i, arg, err
-	}
-
-	i, arg, err = p.parseIdentifier(start)
-	if err == nil {
-		return i, arg, err
-	}
-
-	return start, nil, p.newError(i, "expected string funccall or identifier")
-}
-
-func (p *Parser) parseArgList(start int) (int, AstNode, error) {
-	i := start
-
-	var err error
-	var ast ArgListNode
-	var lastIsComma bool
-
-	for i < len(p.src) {
-		var arg AstNode
-		i, arg, err = p.parseArg(i)
-		if arg == nil {
-			if err != nil {
-				return start, nil, err
-			}
-			break
-		}
-		lastIsComma = false
-
-		ast.Args = append(ast.Args, arg)
-
-		if p.src[i] != ',' {
-			break
-		}
-		i++
-		if p.src[i] != ' ' {
-			return start, nil, p.newError(i, "expected space")
-		}
-		i++
-		lastIsComma = true
-	}
-
-	if lastIsComma {
-		return start, nil, p.newError(i-1, "argument list ends with a comma")
-	}
-
-	return i, ast, nil
-}
-
-func (p *Parser) parseString(start int) (int, AstNode, error) {
-	i := start
-
-	if p.src[i] != '"' {
-		return start, nil, p.newError(i, "expected \"")
-	}
-	i++
-
-	for i < len(p.src) {
-		if p.src[i] == '"' {
-			return i + 1, &StringNode{
-				Value: string(p.src[start+1 : i]),
-			}, nil
-		}
-		i++
-	}
-
-	return start, nil, p.newError(i-1, "expected \", got EOF")
+	return p.err
 }

@@ -23,7 +23,7 @@ func (e *parserError) Error() string {
 		l := lines[line]
 		len := len(l)
 
-		if iter+len > e.Position {
+		if iter+len >= e.Position {
 			actualLine = l
 			break
 		} else {
