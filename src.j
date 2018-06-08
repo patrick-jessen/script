@@ -1,1 +1,5 @@
-test('Hello', 'world')
+func main() {
+    var value = "Hello"
+    print(value, "world")
+}
+
