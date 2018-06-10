@@ -7,6 +7,8 @@ import (
 	"github.com/patrick-jessen/script/compiler/module"
 )
 
+type ASTNode interface{}
+
 type Parser struct {
 	tokens lexer.TokenStream
 	iter   int
@@ -27,12 +29,18 @@ func New(rules []Rule, tokenNames map[lexer.TokenID]string) (p Parser) {
 	return
 }
 
-func (p *Parser) error(format string, rest ...interface{}) error {
+func (p *Parser) error(format string, rest ...interface{}) *module.SourceError {
 	it := p.iter
 	if p.iter == len(p.tokens) {
 		it--
 	}
 	return p.mod.Error(p.tokens[it].Position, fmt.Sprintf(format, rest...))
+}
+
+func (p *Parser) setError(e *module.SourceError, overRule bool) {
+	if p.err == nil || (e.Position >= p.err.Position && overRule) || e.Position > p.err.Position {
+		p.err = e
+	}
 }
 
 func (p *Parser) Debug() {
@@ -57,9 +65,7 @@ func (p *Parser) tryParse(gid GrammarID) (n ASTNode, err error) {
 			err = se
 			p.iter = oldIter
 
-			if p.err == nil || se.Position > p.err.Position {
-				p.err = se
-			}
+			p.setError(se, false)
 		}
 	}()
 	return p.grammarMap[gid].fn(p), nil
@@ -80,6 +86,7 @@ func (p *Parser) AnyGrammar(gs ...GrammarID) []ASTNode {
 	for {
 		ast := p.OneGrammar(gs...)
 		if ast == nil {
+			p.setError(p.error("expected %v", p.grammarMap[gs[0]].name), true)
 			return out
 		}
 		out = append(out, ast)
@@ -113,7 +120,7 @@ func (p *Parser) Run(m module.Module, tokens lexer.TokenStream) ASTNode {
 
 	if p.iter < len(tokens) {
 		if p.err != nil {
-			fmt.Println(p.err.Error())
+			panic(p.err.Error())
 		}
 		panic(p.error("did not parse further"))
 	}

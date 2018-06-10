@@ -22,10 +22,18 @@ type Token struct {
 	module module.Module
 }
 
-func (t Token) String() string {
+func (t Token) TableString() string {
 	return fmt.Sprintf(
 		"%v\t%v %v",
 		t.module.PositionInfo(t.Position).Link(),
+		color.Green(t.lexer.tokenNames[t.TokenID]),
+		color.Yellow(t.Value),
+	)
+}
+
+func (t Token) String() string {
+	return fmt.Sprintf(
+		"[%v %v]",
 		color.Green(t.lexer.tokenNames[t.TokenID]),
 		color.Yellow(t.Value),
 	)
@@ -40,9 +48,9 @@ func (ts TokenStream) String() (out string) {
 
 	for i, t := range ts {
 		if i == len(ts)-1 {
-			fmt.Fprint(tw, t.String())
+			fmt.Fprint(tw, t.TableString())
 		} else {
-			fmt.Fprintln(tw, t.String())
+			fmt.Fprintln(tw, t.TableString())
 		}
 	}
 

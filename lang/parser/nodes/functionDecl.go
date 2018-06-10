@@ -2,15 +2,25 @@ package nodes
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/patrick-jessen/script/compiler/lexer"
+	"github.com/patrick-jessen/script/compiler/parser"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type FunctionDeclNode struct {
 	Identifier lexer.Token
+	Block      parser.ASTNode
 }
 
 func (n FunctionDeclNode) String() string {
-	return fmt.Sprintf("%v\tidentifier=%v", color.Red("FunctionDeclNode"), color.Yellow(n.Identifier.Value))
+	block := fmt.Sprintf("  %v", n.Block)
+
+	return fmt.Sprintf(
+		"%v identifier=%v\n%v",
+		color.Red("FunctionDecl"),
+		n.Identifier,
+		strings.Replace(block, "\n", "\n  ", -1),
+	)
 }

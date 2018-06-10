@@ -2,14 +2,14 @@ package color
 
 import "fmt"
 
-func Red(str string) string {
-	return fmt.Sprintf("\033[1;31m%v\033[0m", str)
+func Red(val interface{}) string {
+	return fmt.Sprintf("\033[1;31m%v\033[0m", val)
 }
 
-func Yellow(str string) string {
-	return fmt.Sprintf("\033[1;33m%v\033[0m", str)
+func Yellow(val interface{}) string {
+	return fmt.Sprintf("\033[1;33m%v\033[0m", val)
 }
 
-func Green(str string) string {
-	return fmt.Sprintf("\033[1;32m%v\033[0m", str)
+func Green(val interface{}) string {
+	return fmt.Sprintf("\033[1;32m%v\033[0m", val)
 }
