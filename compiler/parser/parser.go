@@ -71,46 +71,82 @@ func (p *Parser) tryParse(gid GrammarID) (n ASTNode, err error) {
 	return p.grammarMap[gid].fn(p), nil
 }
 
-func (p *Parser) OneGrammar(gs ...GrammarID) ASTNode {
-	for _, g := range gs {
-		ast, err := p.tryParse(g)
-		if err == nil {
-			return ast
-		}
-	}
-	return nil
-}
-func (p *Parser) AnyGrammar(gs ...GrammarID) []ASTNode {
+func (p *Parser) Any(gs ...interface{}) []ASTNode {
 	var out []ASTNode
 
 	for {
-		ast := p.OneGrammar(gs...)
+		ast := p.Opt(gs...)
 		if ast == nil {
-			p.setError(p.error("expected %v", p.grammarMap[gs[0]].name), true)
+			switch gs[0].(type) {
+			case GrammarID:
+				p.setError(p.error("expected %v", p.grammarMap[gs[0].(GrammarID)].name), true)
+			}
 			return out
 		}
 		out = append(out, ast)
 	}
 }
 
-func (p *Parser) OneToken(ts ...lexer.TokenID) lexer.Token {
-	if p.iter == len(p.tokens) {
-		panic(p.error("expected %v but reached EOS", p.tokenNames[ts[0]]))
-	}
+func (p *Parser) Opt(alts ...interface{}) (ret ASTNode) {
+	defer func() {
+		if e := recover(); e != nil {
+			ret = nil
+		}
+	}()
+	return p.One(alts...)
+}
 
-	tok := p.tokens[p.iter]
-	for _, t := range ts {
-		if tok.TokenID == t {
-			p.iter++
-			return tok
+func (p *Parser) One(alts ...interface{}) (ret ASTNode) {
+	for _, a := range alts {
+		switch a.(type) {
+		case GrammarID:
+			ret = p.oneGrammar(a.(GrammarID))
+		case lexer.TokenID:
+			ret = p.oneToken(a.(lexer.TokenID))
+		case func(*Parser) ASTNode:
+			ret = a.(func(*Parser) ASTNode)(p)
+		default:
+			panic("invalid argument")
+		}
+
+		if ret != nil {
+			return
 		}
 	}
 
-	panic(p.error(
+	switch alts[0].(type) {
+	case GrammarID:
+		p.setError(p.error("expected %v", p.grammarMap[alts[0].(GrammarID)].name), true)
+	}
+	panic(p.err)
+}
+
+func (p *Parser) oneGrammar(g GrammarID) ASTNode {
+	ast, err := p.tryParse(g)
+	if err == nil {
+		return ast
+	}
+	return nil
+}
+
+func (p *Parser) oneToken(t lexer.TokenID) ASTNode {
+	if p.iter == len(p.tokens) {
+		panic(p.error("expected %v but reached EOS", p.tokenNames[t]))
+	}
+
+	tok := p.tokens[p.iter]
+	if tok.TokenID == t {
+		p.iter++
+		return tok
+	}
+
+	p.setError(p.error(
 		"expected %v but got %v",
-		p.tokenNames[ts[0]],
+		p.tokenNames[t],
 		p.tokenNames[p.tokens[p.iter].TokenID],
-	))
+	), false)
+
+	return nil
 }
 
 func (p *Parser) Run(m module.Module, tokens lexer.TokenStream) ASTNode {

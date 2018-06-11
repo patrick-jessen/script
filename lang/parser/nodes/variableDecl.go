@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/lexer"
 	"github.com/patrick-jessen/script/compiler/parser"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type VariableDeclNode struct {
-	Identifier lexer.Token
+	Identifier parser.ASTNode
 	Value      parser.ASTNode
 }
 
