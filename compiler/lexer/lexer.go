@@ -31,7 +31,7 @@ outer:
 			match = rule.regexp.FindStringSubmatch(subStr)
 			if len(match) > 0 {
 
-				if !rule.omit {
+				if !rule.Omit {
 					t := Token{
 						TokenID:  rule.TokenID,
 						Position: iter,

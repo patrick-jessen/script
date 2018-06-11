@@ -22,7 +22,9 @@ type Compiler struct {
 func New(lang Language) Compiler {
 	tokenNames := make(map[lexer.TokenID]string)
 	for _, r := range lang.LexerRules {
-		tokenNames[r.TokenID] = r.Name
+		if !r.Omit {
+			tokenNames[r.TokenID] = r.Name
+		}
 	}
 
 	return Compiler{

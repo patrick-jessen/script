@@ -9,7 +9,7 @@ type Rule struct {
 	TokenID TokenID
 	Name    string
 	regexp  *regexp.Regexp
-	omit    bool
+	Omit    bool
 }
 
 // NewRule creates a new token rule.
@@ -27,6 +27,6 @@ func NewOmitRule(name string, regSrc string) Rule {
 	return Rule{
 		Name:   name,
 		regexp: regexp.MustCompile("^" + regSrc),
-		omit:   true,
+		Omit:   true,
 	}
 }
