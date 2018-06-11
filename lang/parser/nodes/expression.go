@@ -8,6 +8,7 @@ import (
 
 type ExpressionNode struct {
 	Expression parser.ASTNode
+	Immutable  bool
 }
 
 func (n ExpressionNode) String() string {

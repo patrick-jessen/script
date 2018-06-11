@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 
+	lex "github.com/patrick-jessen/script/compiler/lexer"
 	"github.com/patrick-jessen/script/compiler/parser"
 	"github.com/patrick-jessen/script/lang/lexer"
 	"github.com/patrick-jessen/script/lang/parser/nodes"
@@ -140,6 +141,9 @@ var Rules = []parser.Rule{
 			for {
 				switch node.(type) {
 				case *nodes.ExpressionNode:
+					if node.(*nodes.ExpressionNode).Immutable {
+						break loop
+					}
 					node = node.(*nodes.ExpressionNode).Expression
 				case *nodes.AddNode:
 					pnode = node
@@ -189,6 +193,9 @@ var Rules = []parser.Rule{
 			for {
 				switch node.(type) {
 				case *nodes.ExpressionNode:
+					if node.(*nodes.ExpressionNode).Immutable {
+						break loop
+					}
 					node = node.(*nodes.ExpressionNode).Expression
 				case *nodes.AddNode:
 					pnode = node
@@ -241,6 +248,9 @@ var Rules = []parser.Rule{
 			for {
 				switch node.(type) {
 				case *nodes.ExpressionNode:
+					if node.(*nodes.ExpressionNode).Immutable {
+						break loop
+					}
 					node = node.(*nodes.ExpressionNode).Expression
 				case *nodes.MultiplyNode:
 					pnode = node
@@ -293,6 +303,9 @@ var Rules = []parser.Rule{
 			for {
 				switch node.(type) {
 				case *nodes.ExpressionNode:
+					if node.(*nodes.ExpressionNode).Immutable {
+						break loop
+					}
 					node = node.(*nodes.ExpressionNode).Expression
 				case *nodes.MultiplyNode:
 					pnode = node
@@ -332,6 +345,7 @@ var Rules = []parser.Rule{
 			p.OneToken(lexer.ParentEnd)
 			return &nodes.ExpressionNode{
 				Expression: exp,
+				Immutable:  true,
 			}
 		},
 	),
@@ -347,4 +361,119 @@ var Rules = []parser.Rule{
 			}
 		},
 	),
+}
+
+func handleMathOrder(lhs parser.ASTNode, rhs parser.ASTNode, op lex.TokenID) parser.ASTNode {
+	var pnode parser.ASTNode
+	node := rhs
+
+	if op == lexer.Plus || op == lexer.Minus {
+	loopPlusMinus:
+		for {
+			switch node.(type) {
+			case *nodes.ExpressionNode:
+				exp := node.(*nodes.ExpressionNode)
+				if exp.Immutable {
+					break loopPlusMinus
+				}
+				node = exp.Expression
+			case *nodes.AddNode:
+				pnode = node
+				node = node.(*nodes.AddNode).LHS
+			case *nodes.SubtractNode:
+				pnode = node
+				node = node.(*nodes.SubtractNode).LHS
+			default:
+				break loopPlusMinus
+			}
+		}
+
+	} else if op == lexer.Asterisk || op == lexer.Slash {
+	loopMulDiv:
+		for {
+			switch node.(type) {
+			case *nodes.ExpressionNode:
+				exp := node.(*nodes.ExpressionNode)
+				if exp.Immutable {
+					break loopMulDiv
+				}
+				node = exp.Expression
+			case *nodes.MultiplyNode:
+				pnode = node
+				node = node.(*nodes.MultiplyNode).LHS
+			case *nodes.DivideNode:
+				pnode = node
+				node = node.(*nodes.DivideNode).LHS
+			default:
+				break loopMulDiv
+			}
+		}
+	} else {
+		panic("unexpected operation token")
+	}
+
+	var newLHS parser.ASTNode
+
+	switch op {
+	case lexer.Plus:
+		if pnode == nil {
+			return &nodes.AddNode{
+				LHS: lhs,
+				RHS: rhs,
+			}
+		}
+		newLHS = &nodes.AddNode{
+			LHS: lhs,
+			RHS: node,
+		}
+
+	case lexer.Minus:
+		if pnode == nil {
+			return &nodes.SubtractNode{
+				LHS: lhs,
+				RHS: rhs,
+			}
+		}
+		newLHS = &nodes.SubtractNode{
+			LHS: lhs,
+			RHS: node,
+		}
+
+	case lexer.Asterisk:
+		if pnode == nil {
+			return &nodes.MultiplyNode{
+				LHS: lhs,
+				RHS: rhs,
+			}
+		}
+		newLHS = &nodes.MultiplyNode{
+			LHS: lhs,
+			RHS: node,
+		}
+
+	case lexer.Slash:
+		if pnode == nil {
+			return &nodes.DivideNode{
+				LHS: lhs,
+				RHS: rhs,
+			}
+		}
+		newLHS = &nodes.DivideNode{
+			LHS: lhs,
+			RHS: node,
+		}
+	}
+
+	switch pnode.(type) {
+	case *nodes.AddNode:
+		pnode.(*nodes.AddNode).LHS = newLHS
+	case *nodes.SubtractNode:
+		pnode.(*nodes.SubtractNode).LHS = newLHS
+	case *nodes.MultiplyNode:
+		pnode.(*nodes.MultiplyNode).LHS = newLHS
+	case *nodes.DivideNode:
+		pnode.(*nodes.DivideNode).LHS = newLHS
+	}
+
+	return rhs
 }
