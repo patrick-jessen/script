@@ -99,11 +99,10 @@ var Rules = []parser.Rule{
 	parser.NewRule(Expression, "expression",
 		func(p *parser.Parser) parser.ASTNode {
 			exp := p.OneGrammar(
-				Subtract,
 				Add,
+				Subtract,
 				Multiply,
 				Divide,
-				Parenthesis,
 				BaseExpression,
 			)
 			return &nodes.ExpressionNode{
@@ -133,6 +132,39 @@ var Rules = []parser.Rule{
 			)
 			p.OneToken(lexer.Plus)
 			rhs := p.OneGrammar(Expression)
+
+			var pnode parser.ASTNode = nil
+			node := rhs
+
+		loop:
+			for {
+				switch node.(type) {
+				case *nodes.ExpressionNode:
+					node = node.(*nodes.ExpressionNode).Expression
+				case *nodes.AddNode:
+					pnode = node
+					node = node.(*nodes.AddNode).LHS
+				case *nodes.SubtractNode:
+					pnode = node
+					node = node.(*nodes.SubtractNode).LHS
+				default:
+					if pnode == nil {
+						break loop
+					}
+					newNode := &nodes.AddNode{
+						LHS: lhs,
+						RHS: node,
+					}
+					switch pnode.(type) {
+					case *nodes.AddNode:
+						pnode.(*nodes.AddNode).LHS = newNode
+					case *nodes.SubtractNode:
+						pnode.(*nodes.SubtractNode).LHS = newNode
+					}
+					return rhs
+				}
+			}
+
 			return &nodes.AddNode{
 				LHS: lhs,
 				RHS: rhs,
@@ -141,19 +173,46 @@ var Rules = []parser.Rule{
 	),
 	parser.NewRule(Subtract, "subtract",
 		func(p *parser.Parser) parser.ASTNode {
-			p.Debug()
 			lhs := p.OneGrammar(
 				Divide,
 				Multiply,
 				Parenthesis,
 				BaseExpression,
 			)
-			fmt.Println("-SUB--------------------")
-			p.Debug()
-			// fmt.Println("LHS", lhs)
-			// fmt.Println("RHS", rhs)
 			p.OneToken(lexer.Minus)
 			rhs := p.OneGrammar(Expression)
+
+			var pnode parser.ASTNode = nil
+			node := rhs
+
+		loop:
+			for {
+				switch node.(type) {
+				case *nodes.ExpressionNode:
+					node = node.(*nodes.ExpressionNode).Expression
+				case *nodes.AddNode:
+					pnode = node
+					node = node.(*nodes.AddNode).LHS
+				case *nodes.SubtractNode:
+					pnode = node
+					node = node.(*nodes.SubtractNode).LHS
+				default:
+					if pnode == nil {
+						break loop
+					}
+					newNode := &nodes.SubtractNode{
+						LHS: lhs,
+						RHS: node,
+					}
+					switch pnode.(type) {
+					case *nodes.AddNode:
+						pnode.(*nodes.AddNode).LHS = newNode
+					case *nodes.SubtractNode:
+						pnode.(*nodes.SubtractNode).LHS = newNode
+					}
+					return rhs
+				}
+			}
 
 			return &nodes.SubtractNode{
 				LHS: lhs,
@@ -164,22 +223,48 @@ var Rules = []parser.Rule{
 	parser.NewRule(Multiply, "multiply",
 		func(p *parser.Parser) parser.ASTNode {
 			lhs := p.OneGrammar(
-				// Divide,
 				Parenthesis,
 				BaseExpression,
 			)
 			p.OneToken(lexer.Asterisk)
-
 			rhs := p.OneGrammar(
 				Multiply,
+				Divide,
 				Parenthesis,
 				BaseExpression,
 			)
 
-			fmt.Println("-MUL--------------------")
-			p.Debug()
-			fmt.Println("LHS", lhs)
-			fmt.Println("RHS", rhs)
+			var pnode parser.ASTNode = nil
+			node := rhs
+
+		loop:
+			for {
+				switch node.(type) {
+				case *nodes.ExpressionNode:
+					node = node.(*nodes.ExpressionNode).Expression
+				case *nodes.MultiplyNode:
+					pnode = node
+					node = node.(*nodes.MultiplyNode).LHS
+				case *nodes.DivideNode:
+					pnode = node
+					node = node.(*nodes.DivideNode).LHS
+				default:
+					if pnode == nil {
+						break loop
+					}
+					newNode := &nodes.MultiplyNode{
+						LHS: lhs,
+						RHS: node,
+					}
+					switch pnode.(type) {
+					case *nodes.MultiplyNode:
+						pnode.(*nodes.MultiplyNode).LHS = newNode
+					case *nodes.DivideNode:
+						pnode.(*nodes.DivideNode).LHS = newNode
+					}
+					return rhs
+				}
+			}
 
 			return &nodes.MultiplyNode{
 				LHS: lhs,
@@ -194,17 +279,44 @@ var Rules = []parser.Rule{
 				BaseExpression,
 			)
 			p.OneToken(lexer.Slash)
-			fmt.Println("-DIUV--------------------")
-			p.Debug()
-			fmt.Println("LHS", lhs)
-			// fmt.Println("RHS", rhs)
-			p.Debug()
 			rhs := p.OneGrammar(
-				// Divide,
+				Divide,
 				Multiply,
 				Parenthesis,
 				BaseExpression,
 			)
+
+			var pnode parser.ASTNode = nil
+			node := rhs
+
+		loop:
+			for {
+				switch node.(type) {
+				case *nodes.ExpressionNode:
+					node = node.(*nodes.ExpressionNode).Expression
+				case *nodes.MultiplyNode:
+					pnode = node
+					node = node.(*nodes.MultiplyNode).LHS
+				case *nodes.DivideNode:
+					pnode = node
+					node = node.(*nodes.DivideNode).LHS
+				default:
+					if pnode == nil {
+						break loop
+					}
+					newNode := &nodes.DivideNode{
+						LHS: lhs,
+						RHS: node,
+					}
+					switch pnode.(type) {
+					case *nodes.MultiplyNode:
+						pnode.(*nodes.MultiplyNode).LHS = newNode
+					case *nodes.DivideNode:
+						pnode.(*nodes.DivideNode).LHS = newNode
+					}
+					return rhs
+				}
+			}
 
 			return &nodes.DivideNode{
 				LHS: lhs,
