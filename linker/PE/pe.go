@@ -3,9 +3,7 @@ package pe
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"io/ioutil"
-	"math"
 	"time"
 )
 
@@ -27,8 +25,7 @@ type PE struct {
 	sizeOfHeapReserve  int64
 	sizeOfHeapCommit   int64
 
-	sections []*Section
-	Code     []byte
+	sections []*section
 }
 
 func New(sectionAlignment int, fileAlignment int) *PE {
@@ -42,7 +39,7 @@ func New(sectionAlignment int, fileAlignment int) *PE {
 		panic("SectionAlignment must be greater than or equal to FileAlignment")
 	}
 
-	return &PE{
+	pe := &PE{
 		fileAlignment:       int32(fileAlignment),
 		sectionAlignment:    int32(sectionAlignment),
 		imageBase:           0x400000,
@@ -54,37 +51,31 @@ func New(sectionAlignment int, fileAlignment int) *PE {
 		sizeOfHeapReserve:  0x100000,
 		sizeOfHeapCommit:   0x1000,
 	}
+	pe.sections = []*section{
+		newSection(pe, ".text", 0x60000020),
+		newSection(pe, ".rdata", 0x40000040),
+	}
+
+	return pe
 }
 
-func (p *PE) NewSection(name string) *Section {
-	s := newSection(p, name)
-
-	p.sections = append(p.sections, s)
-	return s
-}
-
-func (p *PE) actualSizeOfHeaders() int {
+func (p *PE) actualSizeOfHeaders() int32 {
 	// DOS header: 0x40 bytes
 	// PE header: 0x04 bytes
 	// File header: 0x14 bytes
 	// Optional header: 0xF0 bytes
 	// Section size: 40 bytes
-	return 0x40 + 0x04 + 0x14 + 0xF0 + 40*len(p.sections)
+	return int32(0x40 + 0x04 + 0x14 + 0xF0 + 40*len(p.sections))
 }
 
 func (p *PE) sizeOfHeaders() int32 {
-	return int32(multipleOf(
+	return multipleOf(
 		p.actualSizeOfHeaders(),
-		int(p.fileAlignment),
-	))
+		p.fileAlignment,
+	)
 }
 func (p *PE) sizeOfCode() (s int32) {
-	// assumes that section[0] is .text
-	s = int32(0)
-	if len(p.sections) > 0 {
-		s = p.sections[0].header.SizeOfRawData
-	}
-	return
+	return p.sections[0].header.SizeOfRawData
 }
 func (p *PE) sizeOfImage() int32 {
 	return p.sections[len(p.sections)-1].header.VirtualAddress + p.sectionAlignment
@@ -246,12 +237,16 @@ func (p *PE) writeSectionData() {
 }
 
 func (p *PE) WriteFile(path string) {
+	for _, s := range p.sections {
+		s.update()
+	}
+
 	p.writeDOSHeader()
 	p.writePEHeader()
 	p.writeSectionTable()
 
-	fmt.Println(p.actualSizeOfHeaders())
-	p.buf.Write(make([]byte, int(p.sizeOfHeaders())-p.actualSizeOfHeaders()))
+	// pad headers
+	p.buf.Write(make([]byte, p.sizeOfHeaders()-p.actualSizeOfHeaders()))
 
 	p.writeSectionData()
 
@@ -261,15 +256,6 @@ func (p *PE) WriteFile(path string) {
 	}
 }
 
-func multipleOf(val int, of int) (r int) {
-	r = val
-	if val%of > 0 {
-		r = (val/of + 1) * of
-	}
-	return
-}
-
-func isPow2(num int) bool {
-	ln := math.Log2(float64(num))
-	return math.Ceil(ln) == math.Floor(ln)
+func (p *PE) SetCode(data []byte) {
+	p.sections[0].SetData(data)
 }

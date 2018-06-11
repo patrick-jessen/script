@@ -2,7 +2,7 @@ package pe
 
 import "encoding/binary"
 
-type SectionHeader struct {
+type sectionHeader struct {
 	Name                 [8]byte /*0x00*/
 	VirtualSize          int32   /*0x08*/
 	VirtualAddress       int32   /*0x0C*/
@@ -16,47 +16,61 @@ type SectionHeader struct {
 	/*0x28*/
 }
 
-type Section struct {
-	header SectionHeader
+type section struct {
+	header sectionHeader
 	pe     *PE
 	data   []byte
 }
 
-func newSection(pe *PE, name string) *Section {
+func newSection(pe *PE, name string, characteristics int32) *section {
 	if len(name) > 8 {
 		panic("name must be at most 8 characters")
 	}
-	s := &Section{
+	s := &section{
 		pe: pe,
-		header: SectionHeader{
-			Characteristics: 0x60000020,
-			VirtualAddress:  pe.baseOfCode,
+		header: sectionHeader{
+			Characteristics: characteristics,
+			SizeOfRawData:   pe.fileAlignment,
 		},
 	}
 	copy(s.header.Name[:], name)
 	return s
 }
 
-func (s *Section) SetData(d []byte) {
+func (s *section) SetData(d []byte) {
 	s.data = d
-	s.header.SizeOfRawData = int32(multipleOf(len(s.data), int(s.pe.fileAlignment)))
+	s.header.SizeOfRawData = multipleOf(int32(len(s.data)), s.pe.fileAlignment)
 	s.header.VirtualSize = int32(len(s.data))
 }
 
-func (s *Section) writeHeader() {
+func (s *section) update() {
 	s.calcRawAddress()
+	s.calcVirtualAddress()
+}
 
+func (s *section) writeHeader() {
 	binary.Write(&s.pe.buf, binary.LittleEndian, s.header)
 }
 
-func (s *Section) writeData() {
+func (s *section) writeData() {
 	padding := int(s.header.SizeOfRawData) - len(s.data)
 
 	binary.Write(&s.pe.buf, binary.LittleEndian, s.data)
 	s.pe.buf.Write(make([]byte, padding))
 }
 
-func (s *Section) calcRawAddress() {
+func (s *section) calcVirtualAddress() {
+	va := s.pe.baseOfCode
+	for _, currS := range s.pe.sections {
+		if currS == s {
+			break
+		}
+		va += multipleOf(currS.header.VirtualSize, s.pe.sectionAlignment)
+	}
+	s.header.VirtualAddress = va
+}
+
+func (s *section) calcRawAddress() {
 	offset := s.pe.sizeOfHeaders()
 
 	for _, currS := range s.pe.sections {
