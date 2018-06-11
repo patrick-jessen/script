@@ -134,45 +134,7 @@ var Rules = []parser.Rule{
 			p.OneToken(lexer.Plus)
 			rhs := p.OneGrammar(Expression)
 
-			var pnode parser.ASTNode = nil
-			node := rhs
-
-		loop:
-			for {
-				switch node.(type) {
-				case *nodes.ExpressionNode:
-					if node.(*nodes.ExpressionNode).Immutable {
-						break loop
-					}
-					node = node.(*nodes.ExpressionNode).Expression
-				case *nodes.AddNode:
-					pnode = node
-					node = node.(*nodes.AddNode).LHS
-				case *nodes.SubtractNode:
-					pnode = node
-					node = node.(*nodes.SubtractNode).LHS
-				default:
-					if pnode == nil {
-						break loop
-					}
-					newNode := &nodes.AddNode{
-						LHS: lhs,
-						RHS: node,
-					}
-					switch pnode.(type) {
-					case *nodes.AddNode:
-						pnode.(*nodes.AddNode).LHS = newNode
-					case *nodes.SubtractNode:
-						pnode.(*nodes.SubtractNode).LHS = newNode
-					}
-					return rhs
-				}
-			}
-
-			return &nodes.AddNode{
-				LHS: lhs,
-				RHS: rhs,
-			}
+			return handleMathOrder(lhs, rhs, lexer.Plus)
 		},
 	),
 	parser.NewRule(Subtract, "subtract",
@@ -186,45 +148,7 @@ var Rules = []parser.Rule{
 			p.OneToken(lexer.Minus)
 			rhs := p.OneGrammar(Expression)
 
-			var pnode parser.ASTNode = nil
-			node := rhs
-
-		loop:
-			for {
-				switch node.(type) {
-				case *nodes.ExpressionNode:
-					if node.(*nodes.ExpressionNode).Immutable {
-						break loop
-					}
-					node = node.(*nodes.ExpressionNode).Expression
-				case *nodes.AddNode:
-					pnode = node
-					node = node.(*nodes.AddNode).LHS
-				case *nodes.SubtractNode:
-					pnode = node
-					node = node.(*nodes.SubtractNode).LHS
-				default:
-					if pnode == nil {
-						break loop
-					}
-					newNode := &nodes.SubtractNode{
-						LHS: lhs,
-						RHS: node,
-					}
-					switch pnode.(type) {
-					case *nodes.AddNode:
-						pnode.(*nodes.AddNode).LHS = newNode
-					case *nodes.SubtractNode:
-						pnode.(*nodes.SubtractNode).LHS = newNode
-					}
-					return rhs
-				}
-			}
-
-			return &nodes.SubtractNode{
-				LHS: lhs,
-				RHS: rhs,
-			}
+			return handleMathOrder(lhs, rhs, lexer.Minus)
 		},
 	),
 	parser.NewRule(Multiply, "multiply",
@@ -241,45 +165,7 @@ var Rules = []parser.Rule{
 				BaseExpression,
 			)
 
-			var pnode parser.ASTNode = nil
-			node := rhs
-
-		loop:
-			for {
-				switch node.(type) {
-				case *nodes.ExpressionNode:
-					if node.(*nodes.ExpressionNode).Immutable {
-						break loop
-					}
-					node = node.(*nodes.ExpressionNode).Expression
-				case *nodes.MultiplyNode:
-					pnode = node
-					node = node.(*nodes.MultiplyNode).LHS
-				case *nodes.DivideNode:
-					pnode = node
-					node = node.(*nodes.DivideNode).LHS
-				default:
-					if pnode == nil {
-						break loop
-					}
-					newNode := &nodes.MultiplyNode{
-						LHS: lhs,
-						RHS: node,
-					}
-					switch pnode.(type) {
-					case *nodes.MultiplyNode:
-						pnode.(*nodes.MultiplyNode).LHS = newNode
-					case *nodes.DivideNode:
-						pnode.(*nodes.DivideNode).LHS = newNode
-					}
-					return rhs
-				}
-			}
-
-			return &nodes.MultiplyNode{
-				LHS: lhs,
-				RHS: rhs,
-			}
+			return handleMathOrder(lhs, rhs, lexer.Asterisk)
 		},
 	),
 	parser.NewRule(Divide, "divide",
@@ -296,45 +182,7 @@ var Rules = []parser.Rule{
 				BaseExpression,
 			)
 
-			var pnode parser.ASTNode = nil
-			node := rhs
-
-		loop:
-			for {
-				switch node.(type) {
-				case *nodes.ExpressionNode:
-					if node.(*nodes.ExpressionNode).Immutable {
-						break loop
-					}
-					node = node.(*nodes.ExpressionNode).Expression
-				case *nodes.MultiplyNode:
-					pnode = node
-					node = node.(*nodes.MultiplyNode).LHS
-				case *nodes.DivideNode:
-					pnode = node
-					node = node.(*nodes.DivideNode).LHS
-				default:
-					if pnode == nil {
-						break loop
-					}
-					newNode := &nodes.DivideNode{
-						LHS: lhs,
-						RHS: node,
-					}
-					switch pnode.(type) {
-					case *nodes.MultiplyNode:
-						pnode.(*nodes.MultiplyNode).LHS = newNode
-					case *nodes.DivideNode:
-						pnode.(*nodes.DivideNode).LHS = newNode
-					}
-					return rhs
-				}
-			}
-
-			return &nodes.DivideNode{
-				LHS: lhs,
-				RHS: rhs,
-			}
+			return handleMathOrder(lhs, rhs, lexer.Slash)
 		},
 	),
 	parser.NewRule(Parenthesis, "parenthesis",
