@@ -57,6 +57,7 @@ func New(sectionAlignment int, fileAlignment int) *PE {
 	pe.sections = []*section{
 		newSection(pe, ".text", 0x60000020),
 		newSection(pe, ".idata", 0x40000040),
+		newSection(pe, ".data", 0xC0000040),
 	}
 
 	return pe
@@ -246,11 +247,13 @@ func (p *PE) WriteFile(path string) {
 	// Update .text section
 	p.sections[0].update()
 	p.sections[1].calcVirtualAddress()
-	// Write import table
+	// Write/update .idata section
 	var buf bytes.Buffer
 	p.importer.Write(&buf, int(p.sections[1].header.VirtualAddress))
 	p.sections[1].SetData(buf.Bytes())
 	p.sections[1].update()
+	// Update .data section
+	p.sections[2].update()
 
 	// Start writing file
 
@@ -271,6 +274,10 @@ func (p *PE) WriteFile(path string) {
 
 func (p *PE) SetCode(data []byte) {
 	p.sections[0].SetData(data)
+}
+
+func (p *PE) SetData(data []byte) {
+	p.sections[2].SetData(data)
 }
 
 func (p *PE) Import(symbol string, dll string) {

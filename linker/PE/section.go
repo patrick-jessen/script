@@ -12,7 +12,7 @@ type sectionHeader struct {
 	PointerToLinenumbers int32   /*0x1C*/
 	NumberOfRelocations  int16   /*0x20*/
 	NumberOfLinenumbers  int16   /*0x22*/
-	Characteristics      int32   /*0x24*/
+	Characteristics      uint32  /*0x24*/
 	/*0x28*/
 }
 
@@ -22,7 +22,7 @@ type section struct {
 	data   []byte
 }
 
-func newSection(pe *PE, name string, characteristics int32) *section {
+func newSection(pe *PE, name string, characteristics uint32) *section {
 	if len(name) > 8 {
 		panic("name must be at most 8 characters")
 	}
