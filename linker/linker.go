@@ -1,6 +1,7 @@
 package linker
 
 import (
+	"bytes"
 	"fmt"
 	"time"
 
@@ -18,6 +19,13 @@ func Run() {
 
 	p := pe.New(0x1000, 0x200)
 	p.SetCode(code)
+
+	var buf bytes.Buffer
+	i := pe.NewImporter()
+	i.Import("printf", "msvcrt.dll")
+	i.Write(&buf, 0x2000)
+
+	fmt.Printf("% X", buf.Bytes())
 
 	p.WriteFile("./out.exe")
 

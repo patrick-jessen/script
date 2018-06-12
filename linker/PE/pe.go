@@ -53,7 +53,7 @@ func New(sectionAlignment int, fileAlignment int) *PE {
 	}
 	pe.sections = []*section{
 		newSection(pe, ".text", 0x60000020),
-		newSection(pe, ".rdata", 0x40000040),
+		newSection(pe, ".idata", 0x40000040),
 	}
 
 	return pe
@@ -190,7 +190,10 @@ func (p *PE) writeDataDirectories() {
 		Size    int32
 	}
 	exportTable := dataDirectory{}
-	importTable := dataDirectory{}
+	importTable := dataDirectory{
+		Address: p.sections[1].header.VirtualAddress,
+		Size:    p.sections[1].header.VirtualSize,
+	}
 	resourceTable := dataDirectory{}
 	exceptionTable := dataDirectory{}
 	certificateTable := dataDirectory{}
