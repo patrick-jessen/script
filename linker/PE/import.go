@@ -77,7 +77,7 @@ func (i *Importer) Write(buf *bytes.Buffer, offset int) {
 	}
 }
 
-func NewImporter() *Importer {
+func newImporter() *Importer {
 	return &Importer{
 		dlls: make(map[string]int),
 	}
@@ -94,10 +94,14 @@ type importDescriptor struct {
 func (id *importDescriptor) update(i *Importer, idx int, offset int) {
 	offset += (len(i.descriptors) + 1) * 20 // each importDescriptor is 20 bytes + one empty
 
-	lookUpOffset := offset + idx*8 // each importTable is 8 bytes
+	var lookUpOffset int
+	for l := 0; l < len(i.lookupTables); l++ {
+		if l == idx {
+			lookUpOffset = offset
+		}
+		offset += (len(i.lookupTables[l].entries) + 1) * 8 // each importTable is 8 bytes + one empty
+	}
 	id.ImportLookupTableRVA = int32(lookUpOffset)
-
-	offset += (len(i.lookupTables) + 1) * 8 // each importTable is 8 bytes + one empty
 	i.nameOffset = offset
 
 	for n := 0; n < len(i.names); n++ {
@@ -107,10 +111,14 @@ func (id *importDescriptor) update(i *Importer, idx int, offset int) {
 		}
 	}
 
-	addressOffset := offset + idx*8 // each importTable is 8 bytes
+	var addressOffset int
+	for l := 0; l < len(i.addressTables); l++ {
+		if l == idx {
+			addressOffset = offset
+		}
+		offset += (len(i.addressTables[l].entries) + 1) * 8 // each importTable is 8 bytes + one empty
+	}
 	id.ImportAddressTableRVA = int32(addressOffset)
-
-	offset += (len(i.addressTables) + 1) * 8 // each importTable is 8 bytes + one empty
 
 	for n := 0; n < idx; n++ {
 		offset += len(i.dllNames[n]) + 1 // \0 is 1

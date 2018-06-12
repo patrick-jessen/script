@@ -26,6 +26,7 @@ type PE struct {
 	sizeOfHeapCommit   int64
 
 	sections []*section
+	importer *Importer
 }
 
 func New(sectionAlignment int, fileAlignment int) *PE {
@@ -50,6 +51,8 @@ func New(sectionAlignment int, fileAlignment int) *PE {
 		sizeOfStackCommit:  0x1000,
 		sizeOfHeapReserve:  0x100000,
 		sizeOfHeapCommit:   0x1000,
+
+		importer: newImporter(),
 	}
 	pe.sections = []*section{
 		newSection(pe, ".text", 0x60000020),
@@ -240,9 +243,16 @@ func (p *PE) writeSectionData() {
 }
 
 func (p *PE) WriteFile(path string) {
-	for _, s := range p.sections {
-		s.update()
-	}
+	// Update .text section
+	p.sections[0].update()
+	p.sections[1].calcVirtualAddress()
+	// Write import table
+	var buf bytes.Buffer
+	p.importer.Write(&buf, int(p.sections[1].header.VirtualAddress))
+	p.sections[1].SetData(buf.Bytes())
+	p.sections[1].update()
+
+	// Start writing file
 
 	p.writeDOSHeader()
 	p.writePEHeader()
@@ -261,4 +271,8 @@ func (p *PE) WriteFile(path string) {
 
 func (p *PE) SetCode(data []byte) {
 	p.sections[0].SetData(data)
+}
+
+func (p *PE) Import(symbol string, dll string) {
+	p.importer.Import(symbol, dll)
 }
