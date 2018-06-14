@@ -3,66 +3,77 @@ package parser
 import (
 	"fmt"
 
-	"github.com/patrick-jessen/script/compiler/lexer"
-	"github.com/patrick-jessen/script/compiler/module"
+	"github.com/patrick-jessen/script/compiler/ast"
+	"github.com/patrick-jessen/script/compiler/file"
+	"github.com/patrick-jessen/script/compiler/token"
 )
 
-type ASTNode interface{}
-
-type Parser struct {
-	tokens lexer.TokenStream
-	iter   int
-	mod    module.Module
-	err    *module.SourceError
-
-	grammarMap map[GrammarID]Rule
-	tokenNames map[lexer.TokenID]string
+type parseError struct {
+	err error
+	pos token.Pos
 }
 
-func New(rules []Rule, tokenNames map[lexer.TokenID]string) (p Parser) {
-	p.tokenNames = tokenNames
-	p.grammarMap = make(map[GrammarID]Rule)
+type Parser struct {
+	iter int
+	err  parseError
+	file *file.File
 
+	grammarMap map[GrammarID]Rule
+	tokenNames map[token.ID]string
+}
+
+func New(rules []Rule, tokenNames map[token.ID]string) *Parser {
+	p := &Parser{
+		grammarMap: make(map[GrammarID]Rule),
+		tokenNames: tokenNames,
+	}
 	for _, r := range rules {
 		p.grammarMap[r.grammarID] = r
 	}
-	return
+	return p
 }
 
-func (p *Parser) error(format string, rest ...interface{}) *module.SourceError {
+func (p *Parser) error(format string, rest ...interface{}) parseError {
 	it := p.iter
-	if p.iter == len(p.tokens) {
+	if p.iter == len(p.file.Tokens) {
 		it--
 	}
-	return p.mod.Error(p.tokens[it].Position, fmt.Sprintf(format, rest...))
+	pos := p.file.Tokens[it].Pos
+
+	return parseError{
+		err: p.file.Error(pos, fmt.Sprintf(format, rest...)),
+		pos: pos,
+	}
 }
 
-func (p *Parser) setError(e *module.SourceError, overRule bool) {
-	if p.err == nil || (e.Position >= p.err.Position && overRule) || e.Position > p.err.Position {
+func (p *Parser) setError(e parseError, overRule bool) {
+	if p.err.err == nil || (e.pos >= p.err.pos && overRule) || e.pos > p.err.pos {
 		p.err = e
 	}
 }
 
 func (p *Parser) Debug() {
 	it := p.iter
-	if p.iter == len(p.tokens) {
+	if p.iter == len(p.file.Tokens) {
 		it--
 	}
-	fmt.Println(p.mod.PositionInfo(p.tokens[it].Position).String())
+	pos := p.file.Tokens[it].Pos
+
+	fmt.Println(p.file.PosInfo(pos).String())
 }
 
-func (p *Parser) tryParse(gid GrammarID) (n ASTNode, err error) {
+func (p *Parser) tryParse(gid GrammarID) (n ast.Node, err error) {
 	oldIter := p.iter
 	defer func() {
 		if e := recover(); e != nil {
 
 			switch e.(type) {
-			case *module.SourceError:
+			case parseError:
 			default:
 				panic(e)
 			}
-			se := e.(*module.SourceError)
-			err = se
+			se := e.(parseError)
+			err = se.err
 			p.iter = oldIter
 
 			p.setError(se, false)
@@ -71,8 +82,8 @@ func (p *Parser) tryParse(gid GrammarID) (n ASTNode, err error) {
 	return p.grammarMap[gid].fn(p), nil
 }
 
-func (p *Parser) Any(gs ...interface{}) []ASTNode {
-	var out []ASTNode
+func (p *Parser) Any(gs ...interface{}) []ast.Node {
+	var out []ast.Node
 
 	for {
 		ast := p.Opt(gs...)
@@ -87,7 +98,7 @@ func (p *Parser) Any(gs ...interface{}) []ASTNode {
 	}
 }
 
-func (p *Parser) Opt(alts ...interface{}) (ret ASTNode) {
+func (p *Parser) Opt(alts ...interface{}) (ret ast.Node) {
 	defer func() {
 		if e := recover(); e != nil {
 			ret = nil
@@ -96,15 +107,15 @@ func (p *Parser) Opt(alts ...interface{}) (ret ASTNode) {
 	return p.One(alts...)
 }
 
-func (p *Parser) One(alts ...interface{}) (ret ASTNode) {
+func (p *Parser) One(alts ...interface{}) (ret ast.Node) {
 	for _, a := range alts {
 		switch a.(type) {
 		case GrammarID:
 			ret = p.oneGrammar(a.(GrammarID))
-		case lexer.TokenID:
-			ret = p.oneToken(a.(lexer.TokenID))
-		case func(*Parser) ASTNode:
-			ret = a.(func(*Parser) ASTNode)(p)
+		case token.ID:
+			ret = p.oneToken(a.(token.ID))
+		case func(*Parser) ast.Node:
+			ret = a.(func(*Parser) ast.Node)(p)
 		default:
 			panic("invalid argument")
 		}
@@ -121,7 +132,7 @@ func (p *Parser) One(alts ...interface{}) (ret ASTNode) {
 	panic(p.err)
 }
 
-func (p *Parser) oneGrammar(g GrammarID) ASTNode {
+func (p *Parser) oneGrammar(g GrammarID) ast.Node {
 	ast, err := p.tryParse(g)
 	if err == nil {
 		return ast
@@ -129,13 +140,13 @@ func (p *Parser) oneGrammar(g GrammarID) ASTNode {
 	return nil
 }
 
-func (p *Parser) oneToken(t lexer.TokenID) ASTNode {
-	if p.iter == len(p.tokens) {
+func (p *Parser) oneToken(t token.ID) ast.Node {
+	if p.iter == len(p.file.Tokens) {
 		panic(p.error("expected %v but reached EOS", p.tokenNames[t]))
 	}
 
-	tok := p.tokens[p.iter]
-	if tok.TokenID == t {
+	tok := p.file.Tokens[p.iter]
+	if tok.ID == t {
 		p.iter++
 		return &TokenNode{Token: tok}
 	}
@@ -143,20 +154,19 @@ func (p *Parser) oneToken(t lexer.TokenID) ASTNode {
 	p.setError(p.error(
 		"expected %v but got %v",
 		p.tokenNames[t],
-		p.tokenNames[p.tokens[p.iter].TokenID],
+		p.tokenNames[p.file.Tokens[p.iter].ID],
 	), false)
 
 	return nil
 }
 
-func (p *Parser) Run(m module.Module, tokens lexer.TokenStream) ASTNode {
-	p.tokens = tokens
-	p.mod = m
+func (p *Parser) Run(f *file.File) ast.Node {
+	p.file = f
 	ast := p.grammarMap[0].fn(p)
 
-	if p.iter < len(tokens) {
-		if p.err != nil {
-			panic(p.err.Error())
+	if p.iter < len(f.Tokens) {
+		if p.err.err != nil {
+			panic(p.err.err.Error())
 		}
 		panic(p.error("did not parse further"))
 	}

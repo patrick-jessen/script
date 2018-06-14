@@ -5,6 +5,14 @@ func main() {
 
 var test = 123
 
+
+// main:
+//   mov v0, data0
+//   push v0
+//   push data1
+//   call f0
+
+
 // start:
 //   PUSH rsb
 //   MOV rbp, rsp

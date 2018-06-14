@@ -1,24 +1,23 @@
 package lexer
 
 import (
-	"github.com/patrick-jessen/script/compiler/module"
+	"github.com/patrick-jessen/script/compiler/file"
+	"github.com/patrick-jessen/script/compiler/token"
 )
 
+// Lexer holds the lexing rules
 type Lexer struct {
-	rules      []Rule
-	tokenNames map[TokenID]string
+	rules []Rule
 }
 
-func New(rules []Rule, tokenNames map[TokenID]string) (l Lexer) {
-	l.rules = rules
-	l.tokenNames = tokenNames
-	return
+// New creates a new lexer
+func New(rules []Rule) *Lexer {
+	return &Lexer{rules: rules}
 }
 
-// Run runs the lexer on a module.
-// Returns a token stream.
-func (l *Lexer) Run(mod module.Module) (tokens TokenStream) {
-	source := mod.Source()
+// Run runs the lexer on a file
+func (l *Lexer) Run(file *file.File) error {
+	source := file.Source
 	var iter int
 	var subStr string
 	var match []string
@@ -32,26 +31,22 @@ outer:
 			if len(match) > 0 {
 
 				if !rule.Omit {
-					t := Token{
-						TokenID:  rule.TokenID,
-						Position: iter,
-						lexer:    l,
-						module:   mod,
+					t := token.Token{
+						ID:  rule.TokenID,
+						Pos: token.Pos(iter + file.Offset),
 					}
 					if len(match) > 1 {
 						t.Value = match[1]
 					}
 
-					tokens = append(tokens, t)
+					file.Tokens = append(file.Tokens, t)
 				}
 
 				iter += len(match[0])
-
 				continue outer
 			}
 		}
-		panic(mod.Error(iter, "unknown token"))
+		return file.Error(token.Pos(iter+file.Offset), "unknown token")
 	}
-
-	return
+	return nil
 }

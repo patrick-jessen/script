@@ -1,9 +1,12 @@
 package lexer
 
-import "github.com/patrick-jessen/script/compiler/lexer"
+import (
+	"github.com/patrick-jessen/script/compiler/lexer"
+	"github.com/patrick-jessen/script/compiler/token"
+)
 
 const (
-	Var lexer.TokenID = iota
+	Var token.ID = iota
 	Func
 	Import
 	Return
@@ -25,12 +28,14 @@ const (
 )
 
 var Rules = []lexer.Rule{
+	// Comment
+	lexer.NewOmitRule(`comment`, `\/\/[^\n]*(\n|$)`),
+
 	lexer.NewRule(Var, `var`, `var`),
 	lexer.NewRule(Func, `func`, `func`),
 	lexer.NewRule(Import, `import`, `import`),
 	lexer.NewRule(Return, `return`, `return`),
-	// Comment
-	lexer.NewOmitRule(`comment`, `//[^\n]*\n`),
+
 	// Special
 	lexer.NewOmitRule(`whitespace`, `[ \t]+`),
 	lexer.NewRule(NewLine, `new line`, `[\r\n\t ]+`),

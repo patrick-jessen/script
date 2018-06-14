@@ -2,18 +2,20 @@ package lexer
 
 import (
 	"regexp"
+
+	"github.com/patrick-jessen/script/compiler/token"
 )
 
 // Rule is a rule for matching tokens.
 type Rule struct {
-	TokenID TokenID
+	TokenID token.ID
 	Name    string
 	regexp  *regexp.Regexp
 	Omit    bool
 }
 
 // NewRule creates a new token rule.
-func NewRule(tokenID TokenID, name string, regSrc string) Rule {
+func NewRule(tokenID token.ID, name string, regSrc string) Rule {
 	return Rule{
 		TokenID: tokenID,
 		Name:    name,

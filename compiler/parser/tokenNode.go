@@ -3,11 +3,11 @@ package parser
 import (
 	"fmt"
 
-	"github.com/patrick-jessen/script/compiler/lexer"
+	"github.com/patrick-jessen/script/compiler/token"
 )
 
 type TokenNode struct {
-	Token lexer.Token
+	Token token.Token
 }
 
 func (t TokenNode) String() string {

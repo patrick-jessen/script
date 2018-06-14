@@ -1,7 +1,9 @@
 package parser
 
+import "github.com/patrick-jessen/script/compiler/ast"
+
 type GrammarID int
-type ParseFunction func(*Parser) ASTNode
+type ParseFunction func(*Parser) ast.Node
 
 type Rule struct {
 	grammarID GrammarID
