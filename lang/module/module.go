@@ -26,8 +26,10 @@ func loadFile(path string) *file {
 }
 
 // Load loads a module given a directory.
-func Load(dir string) mod.Module {
-	mod := &module{}
+func Load(dir string, name string) mod.Module {
+	mod := &module{
+		name: name,
+	}
 
 	// locate all files in directory
 	files, err := ioutil.ReadDir(dir)
@@ -53,6 +55,11 @@ type module struct {
 	files  []*file
 	source string
 	tokens lexer.TokenStream
+	name   string
+}
+
+func (m *module) Name() string {
+	return m.name
 }
 
 func (m *module) Error(position int, message string) *mod.SourceError {

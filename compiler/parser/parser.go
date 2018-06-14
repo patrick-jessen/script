@@ -137,7 +137,7 @@ func (p *Parser) oneToken(t lexer.TokenID) ASTNode {
 	tok := p.tokens[p.iter]
 	if tok.TokenID == t {
 		p.iter++
-		return tok
+		return &TokenNode{Token: tok}
 	}
 
 	p.setError(p.error(

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/patrick-jessen/script/compiler/module"
 	"github.com/patrick-jessen/script/compiler/parser"
 	"github.com/patrick-jessen/script/utils/color"
 )
@@ -24,3 +25,5 @@ func (n MultiplyNode) String() string {
 		strings.Replace(rhs, "\n", "\n  ", -1),
 	)
 }
+
+func (n *MultiplyNode) Analyze(mod module.Module) {}

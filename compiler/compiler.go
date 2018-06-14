@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/patrick-jessen/script/compiler/analyzer"
 	"github.com/patrick-jessen/script/compiler/lexer"
 	"github.com/patrick-jessen/script/compiler/module"
 	"github.com/patrick-jessen/script/compiler/parser"
@@ -48,6 +49,10 @@ func (c Compiler) Compile(mod module.Module) {
 	fmt.Println("time:", time.Since(start))
 	fmt.Println(ast)
 
-	// fmt.Println("ANALYZING ================================")
+	fmt.Println("ANALYZING ================================")
+	start = time.Now()
+	analyzer.Run(mod, ast)
+	fmt.Println("time:", time.Since(start))
+
 	// fmt.Println("GENERATING ===============================")
 }

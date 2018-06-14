@@ -9,7 +9,7 @@ import (
 
 func main() {
 	comp := compiler.New(lang.Rules())
-	comp.Compile(module.Load("./src"))
+	comp.Compile(module.Load("./src", "main"))
 
 	linker.Run()
 }

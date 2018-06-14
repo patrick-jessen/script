@@ -9,7 +9,7 @@ import (
 )
 
 type FunctionDeclNode struct {
-	Identifier parser.ASTNode
+	Identifier *parser.TokenNode
 	Block      parser.ASTNode
 }
 
@@ -22,4 +22,8 @@ func (n FunctionDeclNode) String() string {
 		n.Identifier,
 		strings.Replace(block, "\n", "\n  ", -1),
 	)
+}
+
+func (n *FunctionDeclNode) ForwardDeclare(s *Scope) *Scope {
+	return s.DeclareFunction(n.Identifier.Token, "()")
 }

@@ -25,4 +25,5 @@ type Module interface {
 	Error(position int, message string) *SourceError
 	PositionInfo(position int) PosInfo
 	Source() string
+	Name() string
 }

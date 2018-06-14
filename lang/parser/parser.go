@@ -29,8 +29,8 @@ const (
 var Rules = []parser.Rule{
 	parser.NewRule(Root, "root",
 		func(p *parser.Parser) parser.ASTNode {
-			return &nodes.StatementsNode{
-				Stmts: p.Any(DeclStatement),
+			return &nodes.ModuleNode{
+				Statements: p.Any(DeclStatement),
 			}
 		},
 	),
@@ -52,8 +52,8 @@ var Rules = []parser.Rule{
 			ident := p.One(lexer.Identifier)
 			p.One(lexer.Equal)
 			val := p.One(Expression)
-			return nodes.VariableDeclNode{
-				Identifier: ident,
+			return &nodes.VariableDeclNode{
+				Identifier: ident.(*parser.TokenNode),
 				Value:      val,
 			}
 		},
@@ -65,8 +65,8 @@ var Rules = []parser.Rule{
 			p.One(lexer.ParentStart)
 			p.One(lexer.ParentEnd)
 			block := p.One(Block)
-			return nodes.FunctionDeclNode{
-				Identifier: ident,
+			return &nodes.FunctionDeclNode{
+				Identifier: ident.(*parser.TokenNode),
 				Block:      block,
 			}
 		},
@@ -119,7 +119,9 @@ var Rules = []parser.Rule{
 			ret := []parser.ASTNode{first}
 			ret = append(ret, rest...)
 
-			return ret
+			return &nodes.FunctionCallArgsNode{
+				Args: ret,
+			}
 		},
 	),
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/patrick-jessen/script/compiler/module"
 	"github.com/patrick-jessen/script/compiler/parser"
 	"github.com/patrick-jessen/script/utils/color"
 )
@@ -23,3 +24,5 @@ func (n VariableAssignNode) String() string {
 		strings.Replace(val, "\n", "\n  ", -1),
 	)
 }
+
+func (n *VariableAssignNode) Analyze(mod module.Module) {}
