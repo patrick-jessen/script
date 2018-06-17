@@ -5,6 +5,7 @@ import (
 
 	"github.com/patrick-jessen/script/compiler/ast"
 	"github.com/patrick-jessen/script/compiler/file"
+	"github.com/patrick-jessen/script/compiler/parser/nodes"
 	"github.com/patrick-jessen/script/compiler/token"
 )
 
@@ -13,24 +14,15 @@ type parseError struct {
 	pos token.Pos
 }
 
+func Run(f *file.File) ast.Node {
+	p := Parser{file: f}
+	return p.One(Root)
+}
+
 type Parser struct {
 	iter int
 	err  parseError
 	file *file.File
-
-	grammarMap map[GrammarID]Rule
-	tokenNames map[token.ID]string
-}
-
-func New(rules []Rule, tokenNames map[token.ID]string) *Parser {
-	p := &Parser{
-		grammarMap: make(map[GrammarID]Rule),
-		tokenNames: tokenNames,
-	}
-	for _, r := range rules {
-		p.grammarMap[r.grammarID] = r
-	}
-	return p
 }
 
 func (p *Parser) error(format string, rest ...interface{}) parseError {
@@ -41,7 +33,7 @@ func (p *Parser) error(format string, rest ...interface{}) parseError {
 	pos := p.file.Tokens[it].Pos
 
 	return parseError{
-		err: p.file.Error(pos, fmt.Sprintf(format, rest...)),
+		err: p.file.NewError(pos, fmt.Sprintf(format, rest...)),
 		pos: pos,
 	}
 }
@@ -79,7 +71,7 @@ func (p *Parser) tryParse(gid GrammarID) (n ast.Node, err error) {
 			p.setError(se, false)
 		}
 	}()
-	return p.grammarMap[gid].fn(p), nil
+	return rules[gid].fn(p), nil
 }
 
 func (p *Parser) Any(gs ...interface{}) []ast.Node {
@@ -90,7 +82,7 @@ func (p *Parser) Any(gs ...interface{}) []ast.Node {
 		if ast == nil {
 			switch gs[0].(type) {
 			case GrammarID:
-				p.setError(p.error("expected %v", p.grammarMap[gs[0].(GrammarID)].name), true)
+				p.setError(p.error("expected %v", rules[gs[0].(GrammarID)].name), true)
 			}
 			return out
 		}
@@ -127,7 +119,7 @@ func (p *Parser) One(alts ...interface{}) (ret ast.Node) {
 
 	switch alts[0].(type) {
 	case GrammarID:
-		p.setError(p.error("expected %v", p.grammarMap[alts[0].(GrammarID)].name), true)
+		p.setError(p.error("expected %v", rules[alts[0].(GrammarID)].name), true)
 	}
 	panic(p.err)
 }
@@ -142,19 +134,19 @@ func (p *Parser) oneGrammar(g GrammarID) ast.Node {
 
 func (p *Parser) oneToken(t token.ID) ast.Node {
 	if p.iter == len(p.file.Tokens) {
-		panic(p.error("expected %v but reached EOS", p.tokenNames[t]))
+		panic(p.error("expected %v but reached EOS", t))
 	}
 
 	tok := p.file.Tokens[p.iter]
 	if tok.ID == t {
 		p.iter++
-		return &TokenNode{Token: tok}
+		return &nodes.TokenNode{Token: tok}
 	}
 
 	p.setError(p.error(
 		"expected %v but got %v",
-		p.tokenNames[t],
-		p.tokenNames[p.file.Tokens[p.iter].ID],
+		t,
+		p.file.Tokens[p.iter].Name(),
 	), false)
 
 	return nil
@@ -162,7 +154,7 @@ func (p *Parser) oneToken(t token.ID) ast.Node {
 
 func (p *Parser) Run(f *file.File) ast.Node {
 	p.file = f
-	ast := p.grammarMap[0].fn(p)
+	ast := rules[0].fn(p)
 
 	if p.iter < len(f.Tokens) {
 		if p.err.err != nil {

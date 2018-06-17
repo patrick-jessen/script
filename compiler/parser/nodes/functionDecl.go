@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/parser"
+	"github.com/patrick-jessen/script/compiler/ast"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type FunctionDeclNode struct {
-	Identifier *parser.TokenNode
-	Block      parser.ASTNode
+	Identifier *TokenNode
+	Block      ast.Node
 }
 
 func (n FunctionDeclNode) String() string {

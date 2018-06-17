@@ -1,10 +1,8 @@
-package interfaces
+package file
 
 import (
 	"fmt"
 	"strings"
-
-	"github.com/patrick-jessen/script/compiler/token"
 )
 
 type PosInfo struct {
@@ -21,15 +19,4 @@ func (p PosInfo) Link() string {
 func (p PosInfo) String() string {
 	arrow := strings.Repeat(" ", p.ColumnNo-1) + "^"
 	return fmt.Sprintf("%v\n%v", p.Line, arrow)
-}
-
-type Module interface {
-	Name() string
-	PosInfo(pos token.Pos) PosInfo
-	Error(pos token.Pos, message string) error
-	Compiler() Compiler
-}
-
-type Compiler interface {
-	TokenName(id token.ID) string
 }

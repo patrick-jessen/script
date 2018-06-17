@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/patrick-jessen/script/compiler/ast"
 	"github.com/patrick-jessen/script/compiler/module"
-	"github.com/patrick-jessen/script/compiler/parser"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type SubtractNode struct {
-	LHS parser.ASTNode
-	RHS parser.ASTNode
+	LHS ast.Node
+	RHS ast.Node
 }
 
 func (n SubtractNode) String() string {

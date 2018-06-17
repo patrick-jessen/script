@@ -4,41 +4,67 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"text/tabwriter"
 
-	"github.com/patrick-jessen/script/compiler/interfaces"
 	"github.com/patrick-jessen/script/compiler/token"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type File struct {
-	Module interfaces.Module // module that the file belongs to
-	Offset int               // offset of positions within module
-	Path   string            // path to the file
-	Source string            // source of the file
+	PosMask token.Pos
+	Path    string // path to the file
+	Source  string // source of the file
 
+	Errors []error
 	Tokens []token.Token // tokens of the file (only valid after running lexer)
 }
 
-func Load(mod interfaces.Module, offset int, path string) *File {
+func Load(mask token.Pos, path string) *File {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}
 	return &File{
-		Module: mod,
-		Offset: offset,
-		Path:   path,
-		Source: string(b),
+		PosMask: mask,
+		Path:    path,
+		Source:  string(b),
 	}
 }
 
-func (f *File) Error(pos token.Pos, msg string) error {
-	return f.Module.Error(pos, msg)
+func (f *File) Error(pos token.Pos, message string) {
+	f.Errors = append(f.Errors, &fileError{
+		File:     f,
+		Position: pos,
+		Message:  message,
+	})
 }
 
-func (f *File) PosInfo(pos token.Pos) interfaces.PosInfo {
-	return f.Module.PosInfo(pos)
+func (f *File) NewError(pos token.Pos, message string) error {
+	return &fileError{
+		File:     f,
+		Position: pos,
+		Message:  message,
+	}
+}
+
+func (f *File) PosInfo(pos token.Pos) PosInfo {
+	var iter int
+	var lines = strings.Split(f.Source, "\n")
+	var p = int(pos) & 0x00FFFFFF
+
+	for i, l := range lines {
+		if iter+len(l) >= p {
+			return PosInfo{
+				File:     f.Path,
+				LineNo:   i + 1,        // base-1 indexed
+				ColumnNo: p - iter + 1, // base-1 indexed
+				Line:     l,
+			}
+		}
+		iter += len(l) + 1 // +1 due to \n removed by split
+	}
+	panic("invalid position")
 }
 
 func (f *File) TokensString() string {
@@ -59,8 +85,8 @@ func (f *File) TokensString() string {
 func (f *File) tokenString(t token.Token) string {
 	return fmt.Sprintf(
 		"%v\t%v\t%v",
-		f.Module.PosInfo(t.Pos).Link(),
-		color.Green(f.Module.Compiler().TokenName(t.ID)),
+		f.PosInfo(t.Pos).Link(),
+		color.Green(t.Name()),
 		color.Yellow(t.Value),
 	)
 }

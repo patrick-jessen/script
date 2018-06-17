@@ -5,35 +5,26 @@ import (
 	"github.com/patrick-jessen/script/compiler/token"
 )
 
-// Lexer holds the lexing rules
-type Lexer struct {
-	rules []Rule
-}
-
-// New creates a new lexer
-func New(rules []Rule) *Lexer {
-	return &Lexer{rules: rules}
-}
-
 // Run runs the lexer on a file
-func (l *Lexer) Run(file *file.File) error {
+func Run(file *file.File) bool {
 	source := file.Source
 	var iter int
 	var subStr string
 	var match []string
+	var lastErrPos int
 
 outer:
 	for iter < len(source) {
 		subStr = source[iter:]
 
-		for _, rule := range l.rules {
+		for _, rule := range rules {
 			match = rule.regexp.FindStringSubmatch(subStr)
 			if len(match) > 0 {
 
-				if !rule.Omit {
+				if !rule.omit {
 					t := token.Token{
-						ID:  rule.TokenID,
-						Pos: token.Pos(iter + file.Offset),
+						ID:  rule.tokenID,
+						Pos: token.Pos(iter) | file.PosMask,
 					}
 					if len(match) > 1 {
 						t.Value = match[1]
@@ -46,7 +37,12 @@ outer:
 				continue outer
 			}
 		}
-		return file.Error(token.Pos(iter+file.Offset), "unknown token")
+
+		if iter-lastErrPos > 1 {
+			file.Error(token.Pos(iter)|file.PosMask, "unknown token")
+		}
+		lastErrPos = iter
+		iter++
 	}
-	return nil
+	return len(file.Errors) > 0
 }

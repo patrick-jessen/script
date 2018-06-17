@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/patrick-jessen/script/compiler/ast"
 	"github.com/patrick-jessen/script/compiler/module"
-	"github.com/patrick-jessen/script/compiler/parser"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type VariableAssignNode struct {
-	Identifier parser.ASTNode
-	Value      parser.ASTNode
+	Identifier ast.Node
+	Value      ast.Node
 }
 
 func (n VariableAssignNode) String() string {

@@ -1,4 +1,4 @@
-package module
+package file
 
 import (
 	"fmt"
@@ -7,14 +7,14 @@ import (
 	"github.com/patrick-jessen/script/utils/color"
 )
 
-type sourceError struct {
-	Module   *Module
+type fileError struct {
+	File     *File
 	Position token.Pos
 	Message  string
 }
 
-func (se *sourceError) Error() string {
-	posInfo := se.Module.PosInfo(se.Position)
+func (se *fileError) Error() string {
+	posInfo := se.File.PosInfo(se.Position)
 
 	return fmt.Sprintf(
 		"%v\t%v\n%v",

@@ -3,11 +3,11 @@ package nodes
 import (
 	"fmt"
 
-	"github.com/patrick-jessen/script/compiler/parser"
+	"github.com/patrick-jessen/script/compiler/ast"
 )
 
 type StatementsNode struct {
-	Stmts []parser.ASTNode
+	Stmts []ast.Node
 }
 
 func (n StatementsNode) String() (out string) {

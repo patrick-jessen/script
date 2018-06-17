@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/patrick-jessen/script/compiler/ast"
 	"github.com/patrick-jessen/script/compiler/module"
-	"github.com/patrick-jessen/script/compiler/parser"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type VariableDeclNode struct {
-	Identifier *parser.TokenNode
-	Value      parser.ASTNode
+	Identifier *TokenNode
+	Value      ast.Node
 }
 
 func (n VariableDeclNode) String() string {

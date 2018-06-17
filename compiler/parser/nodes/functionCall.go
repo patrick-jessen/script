@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/module"
-	"github.com/patrick-jessen/script/compiler/parser"
+	"github.com/patrick-jessen/script/compiler/ast"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type FunctionCallNode struct {
-	Identifier parser.ASTNode
-	Args       parser.ASTNode
+	Identifier ast.Node
+	Args       ast.Node
 }
 
 func (n FunctionCallNode) String() string {
@@ -35,7 +34,7 @@ func (n FunctionCallNode) String() string {
 	)
 }
 
-func (n *FunctionCallNode) Analyze(mod module.Module) {
+func (n *FunctionCallNode) Analyze() {
 	// will throw if not declared, or if types are not compatible
 	//
 	// mod.ReferenceFunction(

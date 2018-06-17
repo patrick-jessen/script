@@ -4,26 +4,23 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/module"
-	"github.com/patrick-jessen/script/compiler/parser"
+	"github.com/patrick-jessen/script/compiler/ast"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
-type AddNode struct {
-	LHS parser.ASTNode
-	RHS parser.ASTNode
+type DivideNode struct {
+	LHS ast.Node
+	RHS ast.Node
 }
 
-func (n AddNode) String() string {
+func (n DivideNode) String() string {
 	lhs := fmt.Sprintf("  %v", n.LHS)
 	rhs := fmt.Sprintf("  %v", n.RHS)
 
 	return fmt.Sprintf(
 		"%v\n%v\n%v",
-		color.Red("Add"),
+		color.Red("Divide"),
 		strings.Replace(lhs, "\n", "\n  ", -1),
 		strings.Replace(rhs, "\n", "\n  ", -1),
 	)
 }
-
-func (n *AddNode) Analyze(mod module.Module) {}
