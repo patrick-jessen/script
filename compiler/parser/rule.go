@@ -2,7 +2,6 @@ package parser
 
 import (
 	"github.com/patrick-jessen/script/compiler/ast"
-	"github.com/patrick-jessen/script/compiler/parser/nodes"
 	"github.com/patrick-jessen/script/compiler/token"
 )
 
@@ -31,7 +30,7 @@ func init() {
 	rules = map[GrammarID]rule{
 		Root: newRule("root",
 			func(p *Parser) ast.Node {
-				return &nodes.ModuleNode{
+				return &ast.Module{
 					Statements: p.Any(DeclStatement),
 				}
 			},
@@ -54,8 +53,8 @@ func init() {
 				ident := p.One(token.Identifier)
 				p.One(token.Equal)
 				val := p.One(Expression)
-				return &nodes.VariableDeclNode{
-					Identifier: ident.(*nodes.TokenNode),
+				return &ast.VariableDecl{
+					Identifier: ident.(*ast.Identifier),
 					Value:      val,
 				}
 			},
@@ -67,8 +66,8 @@ func init() {
 				p.One(token.ParentStart)
 				p.One(token.ParentEnd)
 				block := p.One(Block)
-				return &nodes.FunctionDeclNode{
-					Identifier: ident.(*nodes.TokenNode),
+				return &ast.FunctionDeclNode{
+					Identifier: ident.(*ast.Identifier),
 					Block:      block,
 				}
 			},
@@ -92,9 +91,9 @@ func init() {
 				p.One(token.Equal)
 				val := p.One(Expression)
 
-				return &nodes.VariableAssignNode{
-					Identifier: ident,
-					Value:      val,
+				return &ast.VariableAssign{
+					Identifier: ident.(*ast.Identifier),
+					Value:      val.(ast.Expression),
 				}
 			},
 		),
@@ -104,9 +103,9 @@ func init() {
 				p.One(token.ParentStart)
 				args := p.Opt(FunctionCallArgs)
 				p.One(token.ParentEnd)
-				return &nodes.FunctionCallNode{
-					Identifier: ident,
-					Args:       args,
+				return &ast.FunctionCall{
+					Identifier: ident.(*ast.Identifier),
+					Args:       args.(*ast.FunctionCallArgs),
 				}
 			},
 		),
@@ -121,7 +120,7 @@ func init() {
 				ret := []ast.Node{first}
 				ret = append(ret, rest...)
 
-				return &nodes.FunctionCallArgsNode{
+				return &ast.FunctionCallArgs{
 					Args: ret,
 				}
 			},
@@ -137,8 +136,8 @@ func init() {
 					Divide,
 					BaseExpression,
 				)
-				return &nodes.ExpressionNode{
-					Expression: exp,
+				return &ast.ExpressionNode{
+					Expression: exp.(ast.Expression),
 				}
 			},
 		),
@@ -151,8 +150,8 @@ func init() {
 					token.Float,
 					token.Identifier,
 				)
-				return &nodes.ExpressionNode{
-					Expression: exp,
+				return &ast.ExpressionNode{
+					Expression: exp.(ast.Expression),
 				}
 			},
 		),
@@ -167,7 +166,9 @@ func init() {
 				p.One(token.Plus)
 				rhs := p.One(Expression)
 
-				return handleMathOrder(lhs, rhs, token.Plus)
+				return handleMathOrder(
+					lhs.(ast.Expression),
+					rhs.(ast.Expression), token.Plus)
 			},
 		),
 		Subtract: newRule("subtract",
@@ -181,7 +182,9 @@ func init() {
 				p.One(token.Minus)
 				rhs := p.One(Expression)
 
-				return handleMathOrder(lhs, rhs, token.Minus)
+				return handleMathOrder(
+					lhs.(ast.Expression),
+					rhs.(ast.Expression), token.Minus)
 			},
 		),
 		Multiply: newRule("multiply",
@@ -198,7 +201,9 @@ func init() {
 					BaseExpression,
 				)
 
-				return handleMathOrder(lhs, rhs, token.Asterisk)
+				return handleMathOrder(
+					lhs.(ast.Expression),
+					rhs.(ast.Expression), token.Asterisk)
 			},
 		),
 		Divide: newRule("divide",
@@ -215,7 +220,9 @@ func init() {
 					BaseExpression,
 				)
 
-				return handleMathOrder(lhs, rhs, token.Slash)
+				return handleMathOrder(
+					lhs.(ast.Expression),
+					rhs.(ast.Expression), token.Slash)
 			},
 		),
 		Parenthesis: newRule("parenthesis",
@@ -223,8 +230,8 @@ func init() {
 				p.One(token.ParentStart)
 				exp := p.One(Expression)
 				p.One(token.ParentEnd)
-				return &nodes.ExpressionNode{
-					Expression: exp,
+				return &ast.ExpressionNode{
+					Expression: exp.(ast.Expression),
 					Immutable:  true,
 				}
 			},
@@ -236,7 +243,7 @@ func init() {
 				p.One(token.NewLine)
 				stmts := p.Any(Statement)
 				p.One(token.CurlEnd)
-				return &nodes.StatementsNode{
+				return &ast.Statements{
 					Stmts: stmts,
 				}
 			},
@@ -244,7 +251,7 @@ func init() {
 	}
 }
 
-func handleMathOrder(lhs ast.Node, rhs ast.Node, op token.ID) ast.Node {
+func handleMathOrder(lhs ast.Expression, rhs ast.Expression, op token.ID) ast.Node {
 	var pnode ast.Node
 	node := rhs
 
@@ -252,18 +259,18 @@ func handleMathOrder(lhs ast.Node, rhs ast.Node, op token.ID) ast.Node {
 	loopPlusMinus:
 		for {
 			switch node.(type) {
-			case *nodes.ExpressionNode:
-				exp := node.(*nodes.ExpressionNode)
+			case *ast.ExpressionNode:
+				exp := node.(*ast.ExpressionNode)
 				if exp.Immutable {
 					break loopPlusMinus
 				}
 				node = exp.Expression
-			case *nodes.AddNode:
+			case *ast.Add:
 				pnode = node
-				node = node.(*nodes.AddNode).LHS
-			case *nodes.SubtractNode:
+				node = node.(*ast.Add).LHS
+			case *ast.Subtract:
 				pnode = node
-				node = node.(*nodes.SubtractNode).LHS
+				node = node.(*ast.Subtract).LHS
 			default:
 				break loopPlusMinus
 			}
@@ -273,18 +280,18 @@ func handleMathOrder(lhs ast.Node, rhs ast.Node, op token.ID) ast.Node {
 	loopMulDiv:
 		for {
 			switch node.(type) {
-			case *nodes.ExpressionNode:
-				exp := node.(*nodes.ExpressionNode)
+			case *ast.ExpressionNode:
+				exp := node.(*ast.ExpressionNode)
 				if exp.Immutable {
 					break loopMulDiv
 				}
 				node = exp.Expression
-			case *nodes.MultiplyNode:
+			case *ast.Multiply:
 				pnode = node
-				node = node.(*nodes.MultiplyNode).LHS
-			case *nodes.DivideNode:
+				node = node.(*ast.Multiply).LHS
+			case *ast.Divide:
 				pnode = node
-				node = node.(*nodes.DivideNode).LHS
+				node = node.(*ast.Divide).LHS
 			default:
 				break loopMulDiv
 			}
@@ -293,67 +300,67 @@ func handleMathOrder(lhs ast.Node, rhs ast.Node, op token.ID) ast.Node {
 		panic("unexpected operation token")
 	}
 
-	var newLHS ast.Node
+	var newLHS ast.Expression
 
 	switch op {
 	case token.Plus:
 		if pnode == nil {
-			return &nodes.AddNode{
+			return &ast.Add{
 				LHS: lhs,
 				RHS: rhs,
 			}
 		}
-		newLHS = &nodes.AddNode{
+		newLHS = &ast.Add{
 			LHS: lhs,
 			RHS: node,
 		}
 
 	case token.Minus:
 		if pnode == nil {
-			return &nodes.SubtractNode{
+			return &ast.Subtract{
 				LHS: lhs,
 				RHS: rhs,
 			}
 		}
-		newLHS = &nodes.SubtractNode{
+		newLHS = &ast.Subtract{
 			LHS: lhs,
 			RHS: node,
 		}
 
 	case token.Asterisk:
 		if pnode == nil {
-			return &nodes.MultiplyNode{
+			return &ast.Multiply{
 				LHS: lhs,
 				RHS: rhs,
 			}
 		}
-		newLHS = &nodes.MultiplyNode{
+		newLHS = &ast.Multiply{
 			LHS: lhs,
 			RHS: node,
 		}
 
 	case token.Slash:
 		if pnode == nil {
-			return &nodes.DivideNode{
+			return &ast.Divide{
 				LHS: lhs,
 				RHS: rhs,
 			}
 		}
-		newLHS = &nodes.DivideNode{
+		newLHS = &ast.Divide{
 			LHS: lhs,
 			RHS: node,
 		}
 	}
 
 	switch pnode.(type) {
-	case *nodes.AddNode:
-		pnode.(*nodes.AddNode).LHS = newLHS
-	case *nodes.SubtractNode:
-		pnode.(*nodes.SubtractNode).LHS = newLHS
-	case *nodes.MultiplyNode:
-		pnode.(*nodes.MultiplyNode).LHS = newLHS
-	case *nodes.DivideNode:
-		pnode.(*nodes.DivideNode).LHS = newLHS
+	case *ast.Add:
+		pnode.(*ast.Add).LHS = newLHS
+	case *ast.Subtract:
+		pnode.(*ast.Subtract).LHS = newLHS
+	case *ast.Multiply:
+		pnode.(*ast.Multiply).LHS = newLHS
+	case *ast.Divide:
+		pnode.(*ast.Divide).LHS = newLHS
 	}
 
 	return rhs

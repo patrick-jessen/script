@@ -1,5 +1,11 @@
 package token
 
+import (
+	"fmt"
+
+	"github.com/patrick-jessen/script/utils/color"
+)
+
 // Pos is the position of a token in a file.
 type Pos int
 
@@ -18,6 +24,9 @@ func (i ID) String() string {
 }
 func (t Token) Name() string {
 	return t.ID.String()
+}
+func (t Token) String() string {
+	return fmt.Sprintf("[%v %v]", color.Green(t.ID), color.Yellow(t.Value))
 }
 
 var names = map[ID]string{

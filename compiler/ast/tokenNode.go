@@ -1,4 +1,4 @@
-package nodes
+package ast
 
 import (
 	"fmt"
@@ -12,4 +12,8 @@ type TokenNode struct {
 
 func (t TokenNode) String() string {
 	return fmt.Sprintf("%v", t.Token)
+}
+
+func (t *TokenNode) Pos() token.Pos {
+	return t.Token.Pos
 }

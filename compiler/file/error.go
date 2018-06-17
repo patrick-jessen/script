@@ -20,6 +20,6 @@ func (se *fileError) Error() string {
 		"%v\t%v\n%v",
 		color.Red("ERROR: "+se.Message),
 		posInfo.Link(),
-		color.Yellow(posInfo.String()),
+		color.Yellow(posInfo),
 	)
 }

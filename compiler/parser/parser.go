@@ -5,18 +5,12 @@ import (
 
 	"github.com/patrick-jessen/script/compiler/ast"
 	"github.com/patrick-jessen/script/compiler/file"
-	"github.com/patrick-jessen/script/compiler/parser/nodes"
 	"github.com/patrick-jessen/script/compiler/token"
 )
 
 type parseError struct {
 	err error
 	pos token.Pos
-}
-
-func Run(f *file.File) ast.Node {
-	p := Parser{file: f}
-	return p.One(Root)
 }
 
 type Parser struct {
@@ -140,7 +134,7 @@ func (p *Parser) oneToken(t token.ID) ast.Node {
 	tok := p.file.Tokens[p.iter]
 	if tok.ID == t {
 		p.iter++
-		return &nodes.TokenNode{Token: tok}
+		return &ast.TokenNode{Token: tok}
 	}
 
 	p.setError(p.error(
@@ -152,9 +146,9 @@ func (p *Parser) oneToken(t token.ID) ast.Node {
 	return nil
 }
 
-func (p *Parser) Run(f *file.File) ast.Node {
-	p.file = f
-	ast := rules[0].fn(p)
+func Run(f *file.File) ast.Node {
+	p := Parser{file: f}
+	ast := p.One(Root)
 
 	if p.iter < len(f.Tokens) {
 		if p.err.err != nil {
@@ -162,6 +156,5 @@ func (p *Parser) Run(f *file.File) ast.Node {
 		}
 		panic(p.error("did not parse further"))
 	}
-
 	return ast
 }
