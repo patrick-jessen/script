@@ -16,16 +16,24 @@ func (s *Scanner) Init(file *file.File) {
 	s.char = file.Source[0]
 }
 
-func (s *Scanner) next() {
+func (s *Scanner) next() bool {
 	s.iter++
 	if s.iter < len(s.file.Source) {
 		s.char = s.file.Source[s.iter]
+
+		if s.char == '\n' {
+			s.file.MarkLine(s.iter)
+		}
+
+		return true
 	}
+	s.char = 0
+	return false
 }
 
 func (s *Scanner) Scan() (tok token.Token) {
 startScan:
-	if s.iter == len(s.file.Source) {
+	if s.iter >= len(s.file.Source) {
 		return token.Token{
 			ID:  token.EOF,
 			Pos: token.Pos(len(s.file.Source)) | s.file.PosMask,
@@ -75,6 +83,14 @@ startScan:
 		tok.ID = token.CurlEnd
 	case '=':
 		tok.ID = token.Equal
+	case '+':
+		tok.ID = token.Plus
+	case '-':
+		tok.ID = token.Minus
+	case '*':
+		tok.ID = token.Asterisk
+	case '/':
+		tok.ID = token.Slash
 	case ',':
 		tok.ID = token.Comma
 	case '"':
@@ -86,7 +102,6 @@ startScan:
 		fallthrough
 	case '\n':
 		tok.ID = token.NewLine
-		s.file.MarkLine(s.iter)
 	default:
 		s.file.Error(token.Pos(s.iter), "unexpected token")
 		s.next()
@@ -101,10 +116,13 @@ func (s *Scanner) scanString() string {
 	start := s.iter
 	s.next()
 	for s.char != '"' {
-		s.next()
+		if !s.next() {
+			s.file.Error(token.Pos(s.iter)|s.file.PosMask,
+				"expected \"")
+			break
+		}
 	}
-	s.next()
-	return s.file.Source[start+1 : s.iter-1]
+	return s.file.Source[start+1 : s.iter]
 }
 
 func (s *Scanner) scanIdentifer() string {

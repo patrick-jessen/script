@@ -26,6 +26,10 @@ func New(file *file.File) (p *Parser) {
 }
 
 func (p *Parser) next() {
+	if p.tok.ID == token.EOF {
+		fmt.Println(p.file.Errors)
+		panic("eof")
+	}
 	p.tok = p.scanner.Scan()
 }
 
@@ -35,8 +39,9 @@ func (p *Parser) expect(id token.ID) {
 		if len(p.file.Errors) > 10 {
 			panic("too many errors")
 		}
+	} else {
+		p.next()
 	}
-	p.next()
 }
 
 func (p *Parser) Debug() {
@@ -46,14 +51,14 @@ func (p *Parser) Debug() {
 func (p *Parser) parseFunctionCallArgs() *ast.FunctionCallArgs {
 	ast := &ast.FunctionCallArgs{}
 
-	switch p.tok.ID {
-	case token.Identifier:
-		ident := p.parseIdentifier()
-		ast.Args = append(ast.Args, ident)
-	default:
-		p.file.Error(p.tok.Pos, "expected argument")
-		p.next()
-		return nil
+	for {
+		expr := p.parseExpression()
+		ast.Args = append(ast.Args, expr)
+
+		if p.tok.ID != token.Comma {
+			break
+		}
+		p.expect(token.Comma)
 	}
 
 	return ast
@@ -101,18 +106,117 @@ func (p *Parser) parseBlock() *ast.Block {
 }
 
 func (p *Parser) parseExpression() ast.Expression {
-	var exp ast.Expression
+	// Shunting-yard algorithm
+	var val ast.Expression
+	var out []interface{}
+	var ops []token.ID
 
-	switch p.tok.ID {
-	case token.String:
-		exp = p.parseString()
-	default:
-		p.file.Error(p.tok.Pos, "expected declaration")
-		p.next()
-		return nil
+loop:
+	for {
+		switch p.tok.ID {
+		case token.String:
+			val = p.parseString()
+		case token.Identifier:
+			val = p.parseIdentifier()
+		case token.Integer:
+			val = p.parseInteger()
+		case token.Float:
+			val = p.parseFloat()
+		case token.ParentStart:
+			p.expect(token.ParentStart)
+			val = p.parseExpression()
+			p.expect(token.ParentEnd)
+		default:
+			p.file.Error(p.tok.Pos, "expected expression")
+			p.next()
+			return nil
+		}
+		out = append(out, val)
+
+		switch p.tok.ID {
+		case token.Plus:
+			fallthrough
+		case token.Minus:
+			for i := len(ops) - 1; i >= 0; i-- {
+				out = append(out, ops[i])
+				ops = ops[:i]
+			}
+			ops = append(ops, p.tok.ID)
+			p.expect(p.tok.ID)
+
+		case token.Asterisk:
+			fallthrough
+		case token.Slash:
+			for i := len(ops) - 1; i >= 0; i-- {
+				if ops[i] == token.Asterisk || ops[i] == token.Slash {
+					out = append(out, ops[i])
+					ops = ops[:i]
+				}
+			}
+			ops = append(ops, p.tok.ID)
+			p.expect(p.tok.ID)
+		default:
+			break loop
+		}
 	}
 
-	return exp
+	for i := len(ops) - 1; i >= 0; i-- {
+		out = append(out, ops[i])
+	}
+
+	var valStack []ast.Expression
+	var expr ast.Expression
+
+	for _, v := range out {
+		switch v.(type) {
+		case nil:
+			return nil
+		case token.ID:
+			lhs := valStack[len(valStack)-2]
+			rhs := valStack[len(valStack)-1]
+			valStack = valStack[:len(valStack)-2]
+
+			switch v.(token.ID) {
+			case token.Plus:
+				expr = &ast.Add{
+					LHS: lhs,
+					RHS: rhs,
+				}
+			case token.Minus:
+				expr = &ast.Subtract{
+					LHS: lhs,
+					RHS: rhs,
+				}
+			case token.Asterisk:
+				expr = &ast.Multiply{
+					LHS: lhs,
+					RHS: rhs,
+				}
+			case token.Slash:
+				expr = &ast.Divide{
+					LHS: lhs,
+					RHS: rhs,
+				}
+			}
+			valStack = append(valStack, expr)
+		default:
+			valStack = append(valStack, v.(ast.Expression))
+		}
+	}
+
+	return valStack[0]
+}
+
+func (p *Parser) parseInteger() *ast.Integer {
+	ast := &ast.Integer{Token: p.tok}
+	p.expect(token.Integer)
+	return ast
+}
+
+func (p *Parser) parseFloat() *ast.Float {
+	ast := &ast.Float{Token: p.tok}
+	p.expect(token.Float)
+	return ast
 }
 
 func (p *Parser) parseString() *ast.String {
