@@ -4,6 +4,7 @@ import "github.com/patrick-jessen/script/compiler/token"
 
 type Node interface {
 	Pos() token.Pos
+	String() string
 }
 
 type Expression interface {

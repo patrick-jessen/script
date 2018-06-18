@@ -1,4 +1,4 @@
 func main() {
-    test = "Hello"
+    var test = "Hello"
     print(test, "world")
 }

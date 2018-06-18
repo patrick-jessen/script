@@ -5,156 +5,174 @@ import (
 
 	"github.com/patrick-jessen/script/compiler/ast"
 	"github.com/patrick-jessen/script/compiler/file"
+	"github.com/patrick-jessen/script/compiler/scanner"
 	"github.com/patrick-jessen/script/compiler/token"
 )
 
-type parseError struct {
-	err error
-	pos token.Pos
-}
-
 type Parser struct {
-	iter int
-	err  parseError
 	file *file.File
+
+	scanner scanner.Scanner
+	tok     token.Token
 }
 
-func (p *Parser) error(format string, rest ...interface{}) parseError {
-	it := p.iter
-	if p.iter == len(p.file.Tokens) {
-		it--
+func New(file *file.File) (p *Parser) {
+	p = &Parser{
+		file: file,
 	}
-	pos := p.file.Tokens[it].Pos
-
-	return parseError{
-		err: p.file.NewError(pos, fmt.Sprintf(format, rest...)),
-		pos: pos,
-	}
+	p.scanner.Init(file)
+	p.next()
+	return p
 }
 
-func (p *Parser) setError(e parseError, overRule bool) {
-	if p.err.err == nil || (e.pos >= p.err.pos && overRule) || e.pos > p.err.pos {
-		p.err = e
+func (p *Parser) next() {
+	p.tok = p.scanner.Scan()
+}
+
+func (p *Parser) expect(id token.ID) {
+	if p.tok.ID != id {
+		p.file.Error(p.tok.Pos, fmt.Sprintf("expected %v", id.String()))
+		if len(p.file.Errors) > 10 {
+			panic("too many errors")
+		}
 	}
+	p.next()
 }
 
 func (p *Parser) Debug() {
-	it := p.iter
-	if p.iter == len(p.file.Tokens) {
-		it--
-	}
-	pos := p.file.Tokens[it].Pos
-
-	fmt.Println(p.file.PosInfo(pos).String())
+	fmt.Println(p.file.PosInfo(p.tok.Pos).String())
 }
 
-func (p *Parser) tryParse(gid GrammarID) (n ast.Node, err error) {
-	oldIter := p.iter
-	defer func() {
-		if e := recover(); e != nil {
+func (p *Parser) parseFunctionCallArgs() *ast.FunctionCallArgs {
+	ast := &ast.FunctionCallArgs{}
 
-			switch e.(type) {
-			case parseError:
-			default:
-				panic(e)
-			}
-			se := e.(parseError)
-			err = se.err
-			p.iter = oldIter
+	switch p.tok.ID {
+	case token.Identifier:
+		ident := p.parseIdentifier()
+		ast.Args = append(ast.Args, ident)
+	default:
+		p.file.Error(p.tok.Pos, "expected argument")
+		p.next()
+		return nil
+	}
 
-			p.setError(se, false)
-		}
-	}()
-	return rules[gid].fn(p), nil
+	return ast
 }
 
-func (p *Parser) Any(gs ...interface{}) []ast.Node {
-	var out []ast.Node
+func (p *Parser) parseFunctionCall() *ast.FunctionCall {
+	ast := &ast.FunctionCall{}
 
-	for {
-		ast := p.Opt(gs...)
-		if ast == nil {
-			switch gs[0].(type) {
-			case GrammarID:
-				p.setError(p.error("expected %v", rules[gs[0].(GrammarID)].name), true)
-			}
-			return out
-		}
-		out = append(out, ast)
+	ast.Identifier = p.parseIdentifier()
+	p.expect(token.ParentStart)
+	if p.tok.ID != token.ParentEnd {
+		ast.Args = p.parseFunctionCallArgs()
 	}
+	p.expect(token.ParentEnd)
+
+	return ast
 }
 
-func (p *Parser) Opt(alts ...interface{}) (ret ast.Node) {
-	defer func() {
-		if e := recover(); e != nil {
-			ret = nil
-		}
-	}()
-	return p.One(alts...)
+func (p *Parser) parseStatement() (n ast.Node) {
+	switch p.tok.ID {
+	case token.Var:
+		n = p.parseVariableDecl()
+	case token.Identifier:
+		n = p.parseFunctionCall()
+	default:
+		p.file.Error(p.tok.Pos, "expected statement")
+		p.next()
+		return nil
+	}
+	p.expect(token.NewLine)
+	return
 }
 
-func (p *Parser) One(alts ...interface{}) (ret ast.Node) {
-	for _, a := range alts {
-		switch a.(type) {
-		case GrammarID:
-			ret = p.oneGrammar(a.(GrammarID))
-		case token.ID:
-			ret = p.oneToken(a.(token.ID))
-		case func(*Parser) ast.Node:
-			ret = a.(func(*Parser) ast.Node)(p)
-		default:
-			panic("invalid argument")
-		}
+func (p *Parser) parseBlock() *ast.Block {
+	ast := &ast.Block{}
 
-		if ret != nil {
-			return
-		}
+	p.expect(token.CurlStart)
+	p.expect(token.NewLine)
+	for p.tok.ID != token.CurlEnd {
+		stmt := p.parseStatement()
+		ast.Statements = append(ast.Statements, stmt)
 	}
-
-	switch alts[0].(type) {
-	case GrammarID:
-		p.setError(p.error("expected %v", rules[alts[0].(GrammarID)].name), true)
-	}
-	panic(p.err)
+	p.expect(token.CurlEnd)
+	return ast
 }
 
-func (p *Parser) oneGrammar(g GrammarID) ast.Node {
-	ast, err := p.tryParse(g)
-	if err == nil {
-		return ast
+func (p *Parser) parseExpression() ast.Expression {
+	var exp ast.Expression
+
+	switch p.tok.ID {
+	case token.String:
+		exp = p.parseString()
+	default:
+		p.file.Error(p.tok.Pos, "expected declaration")
+		p.next()
+		return nil
 	}
-	return nil
+
+	return exp
 }
 
-func (p *Parser) oneToken(t token.ID) ast.Node {
-	if p.iter == len(p.file.Tokens) {
-		panic(p.error("expected %v but reached EOS", t))
+func (p *Parser) parseString() *ast.String {
+	ast := &ast.String{Token: p.tok}
+	p.expect(token.String)
+	return ast
+}
+
+func (p *Parser) parseIdentifier() *ast.Identifier {
+	ast := &ast.Identifier{Token: p.tok}
+	p.expect(token.Identifier)
+	return ast
+}
+
+func (p *Parser) parseFunctionDecl() *ast.FunctionDecl {
+	ast := &ast.FunctionDecl{}
+
+	p.expect(token.Func)
+	ast.Identifier = p.parseIdentifier()
+	p.expect(token.ParentStart)
+	p.expect(token.ParentEnd)
+	ast.Block = p.parseBlock()
+
+	return ast
+}
+func (p *Parser) parseVariableDecl() *ast.VariableDecl {
+	ast := &ast.VariableDecl{}
+
+	p.expect(token.Var)
+	ast.Identifier = p.parseIdentifier()
+	p.expect(token.Equal)
+	ast.Value = p.parseExpression()
+
+	return ast
+}
+
+func (p *Parser) parseDeclaration() (n ast.Node) {
+	switch p.tok.ID {
+	case token.Func:
+		n = p.parseFunctionDecl()
+	case token.Var:
+		n = p.parseVariableDecl()
+	default:
+		p.file.Error(p.tok.Pos, "expected declaration")
+		p.next()
+		return nil
 	}
+	p.expect(token.NewLine)
+	return
+}
 
-	tok := p.file.Tokens[p.iter]
-	if tok.ID == t {
-		p.iter++
-		return &ast.TokenNode{Token: tok}
-	}
+func (p *Parser) parseFile() *ast.File {
+	ast := &ast.File{}
 
-	p.setError(p.error(
-		"expected %v but got %v",
-		t,
-		p.file.Tokens[p.iter].Name(),
-	), false)
+	decl := p.parseDeclaration()
+	ast.Declarations = append(ast.Declarations, decl)
 
-	return nil
+	return ast
 }
 
 func Run(f *file.File) ast.Node {
-	p := Parser{file: f}
-	ast := p.One(Root)
-
-	if p.iter < len(f.Tokens) {
-		if p.err.err != nil {
-			panic(p.err.err.Error())
-		}
-		panic(p.error("did not parse further"))
-	}
-	return ast
+	return New(f).parseFile()
 }

@@ -8,12 +8,12 @@ import (
 	"github.com/patrick-jessen/script/utils/color"
 )
 
-type FunctionDeclNode struct {
+type FunctionDecl struct {
 	Identifier *Identifier
-	Block      Node
+	Block      *Block
 }
 
-func (f FunctionDeclNode) String() string {
+func (f FunctionDecl) String() string {
 	block := fmt.Sprintf("  %v", f.Block)
 
 	return fmt.Sprintf(
@@ -24,6 +24,6 @@ func (f FunctionDeclNode) String() string {
 	)
 }
 
-func (f *FunctionDeclNode) Pos() token.Pos {
+func (f *FunctionDecl) Pos() token.Pos {
 	return f.Identifier.Pos()
 }

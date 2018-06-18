@@ -17,7 +17,7 @@ func (v *VariableDecl) Pos() token.Pos {
 	return v.Identifier.Pos()
 }
 
-func (v VariableDecl) String() string {
+func (v *VariableDecl) String() string {
 	val := fmt.Sprintf("  %v", v.Value)
 
 	return fmt.Sprintf(

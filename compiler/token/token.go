@@ -26,10 +26,15 @@ func (t Token) Name() string {
 	return t.ID.String()
 }
 func (t Token) String() string {
-	return fmt.Sprintf("[%v %v]", color.Green(t.ID), color.Yellow(t.Value))
+	if len(t.Value) > 0 {
+		return fmt.Sprintf("[%v %v]", color.Green(t.ID), color.Yellow(t.Value))
+	}
+	return fmt.Sprintf("[%v]", color.Green(t.ID))
 }
 
 var names = map[ID]string{
+	Invalid:     "INVALID",
+	EOF:         "EOF",
 	Var:         "var",
 	Func:        "func",
 	Import:      "import",
@@ -52,7 +57,9 @@ var names = map[ID]string{
 }
 
 const (
-	Var ID = iota
+	Invalid ID = iota
+	EOF
+	Var
 	Func
 	Import
 	Return
