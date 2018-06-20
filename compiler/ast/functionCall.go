@@ -13,6 +13,10 @@ type FunctionCall struct {
 	Args       *FunctionCallArgs
 }
 
+func (f *FunctionCall) Name() string {
+	return f.Identifier.Token.Value
+}
+
 func (f *FunctionCall) Pos() token.Pos {
 	return f.Identifier.Pos()
 }
@@ -36,4 +40,18 @@ func (f FunctionCall) String() string {
 		f.Identifier,
 		strings.Replace(args, "\n", "\n  ", -1),
 	)
+}
+
+func (f *FunctionCall) Type() string {
+	typ := "("
+	if f.Args != nil {
+		for i, a := range f.Args.Args {
+			typ += a.Type()
+			if i != len(f.Args.Args)-1 {
+				typ += ","
+			}
+		}
+	}
+	typ += ") -> void"
+	return typ
 }

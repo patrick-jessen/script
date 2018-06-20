@@ -9,16 +9,69 @@ import (
 	"github.com/patrick-jessen/script/compiler/token"
 )
 
+type Scope struct {
+	symbols map[string]ast.Decl
+	file    *file.File
+}
+
+func NewScope(f *file.File) *Scope {
+	return &Scope{
+		symbols: make(map[string]ast.Decl),
+		file:    f,
+	}
+}
+
+func (s *Scope) Declare(f ast.Decl) {
+	name := f.Name()
+	sym, ok := s.symbols[name]
+	if ok {
+		s.file.Error(f.Pos(), fmt.Sprintf(
+			"redeclaration of symbol '%v'. First declared here: (%v)",
+			name, s.file.PosInfo(sym.Pos()).Link(),
+		))
+		return
+	}
+
+	s.symbols[name] = f
+}
+func (s *Scope) Expect(f ast.Ref) {
+	name := f.Name()
+	sym, ok := s.symbols[name]
+	if !ok {
+		s.file.Error(f.Pos(), fmt.Sprintf(
+			"undeclared symbol '%v'", name,
+		))
+		return
+	}
+
+	fmt.Println(sym, f)
+	fmt.Println("-------------")
+
+	if f.Type() == "" {
+		f.(*ast.VariableRef).Typ = sym.Type()
+	} else {
+		if f.Type() != sym.Type() {
+			s.file.Error(f.Pos(), fmt.Sprintf(
+				"cannot use %v%v as type %v",
+				name, sym.Type(), f.Type(),
+			))
+		}
+	}
+}
+
 type Parser struct {
 	file *file.File
 
 	scanner scanner.Scanner
 	tok     token.Token
+
+	scope *Scope
 }
 
 func New(file *file.File) (p *Parser) {
 	p = &Parser{
-		file: file,
+		file:  file,
+		scope: NewScope(file),
 	}
 	p.scanner.Init(file)
 	p.next()
@@ -74,6 +127,7 @@ func (p *Parser) parseFunctionCall() *ast.FunctionCall {
 	}
 	p.expect(token.ParentEnd)
 
+	p.scope.Expect(ast)
 	return ast
 }
 
@@ -98,6 +152,10 @@ func (p *Parser) parseBlock() *ast.Block {
 	p.expect(token.CurlStart)
 	p.expect(token.NewLine)
 	for p.tok.ID != token.CurlEnd {
+		if p.tok.ID == token.NewLine {
+			p.next()
+			continue
+		}
 		stmt := p.parseStatement()
 		ast.Statements = append(ast.Statements, stmt)
 	}
@@ -117,7 +175,10 @@ loop:
 		case token.String:
 			val = p.parseString()
 		case token.Identifier:
-			val = p.parseIdentifier()
+			ident := p.parseIdentifier()
+			ref := &ast.VariableRef{Identifier: ident}
+			val = ref
+			p.scope.Expect(ref)
 		case token.Integer:
 			val = p.parseInteger()
 		case token.Float:
@@ -231,15 +292,36 @@ func (p *Parser) parseIdentifier() *ast.Identifier {
 	return ast
 }
 
+func (p *Parser) parseFunctionDeclArgs() *ast.FunctionDeclArgs {
+	ast := &ast.FunctionDeclArgs{}
+
+	for {
+		ident := p.parseIdentifier()
+		typ := p.parseIdentifier()
+		ast.Names = append(ast.Names, ident)
+		ast.Types = append(ast.Types, typ)
+
+		if p.tok.ID != token.Comma {
+			break
+		}
+		p.expect(token.Comma)
+	}
+	return ast
+}
+
 func (p *Parser) parseFunctionDecl() *ast.FunctionDecl {
 	ast := &ast.FunctionDecl{}
 
 	p.expect(token.Func)
 	ast.Identifier = p.parseIdentifier()
 	p.expect(token.ParentStart)
+	if p.tok.ID != token.ParentEnd {
+		ast.Args = p.parseFunctionDeclArgs()
+	}
 	p.expect(token.ParentEnd)
 	ast.Block = p.parseBlock()
 
+	p.scope.Declare(ast)
 	return ast
 }
 func (p *Parser) parseVariableDecl() *ast.VariableDecl {
@@ -250,6 +332,7 @@ func (p *Parser) parseVariableDecl() *ast.VariableDecl {
 	p.expect(token.Equal)
 	ast.Value = p.parseExpression()
 
+	p.scope.Declare(ast)
 	return ast
 }
 
@@ -271,8 +354,14 @@ func (p *Parser) parseDeclaration() (n ast.Node) {
 func (p *Parser) parseFile() *ast.File {
 	ast := &ast.File{}
 
-	decl := p.parseDeclaration()
-	ast.Declarations = append(ast.Declarations, decl)
+	for p.tok.ID != token.EOF {
+		if p.tok.ID == token.NewLine {
+			p.next()
+			continue
+		}
+		decl := p.parseDeclaration()
+		ast.Declarations = append(ast.Declarations, decl)
+	}
 
 	return ast
 }

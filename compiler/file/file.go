@@ -7,7 +7,7 @@ import (
 )
 
 type File struct {
-	PosMask token.Pos
+	posMask token.Pos
 	Path    string // path to the file
 	Source  string // source of the file
 
@@ -25,10 +25,14 @@ func Load(mask token.Pos, path string) *File {
 		panic(err)
 	}
 	return &File{
-		PosMask: mask,
+		posMask: mask,
 		Path:    path,
 		Source:  string(b),
 	}
+}
+
+func (f *File) Pos(p int) token.Pos {
+	return token.Pos(p) | f.posMask
 }
 
 func (f *File) Error(pos token.Pos, message string) {

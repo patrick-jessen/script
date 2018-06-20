@@ -3,7 +3,7 @@ package ast
 import "github.com/patrick-jessen/script/compiler/token"
 
 type FunctionCallArgs struct {
-	Args []Node
+	Args []Expression
 }
 
 func (f *FunctionCallArgs) Pos() token.Pos {

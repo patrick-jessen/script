@@ -27,20 +27,20 @@ func (s *Scanner) next() bool {
 
 		return true
 	}
-	s.char = 0
+	s.char = '\n' // insert newline at the end of file
 	return false
 }
 
 func (s *Scanner) Scan() (tok token.Token) {
 startScan:
-	if s.iter >= len(s.file.Source) {
+	if s.iter >= len(s.file.Source)+1 {
 		return token.Token{
 			ID:  token.EOF,
-			Pos: token.Pos(len(s.file.Source)) | s.file.PosMask,
+			Pos: s.file.Pos(len(s.file.Source)),
 		}
 	}
 
-	tok.Pos = token.Pos(s.iter) | s.file.PosMask
+	tok.Pos = s.file.Pos(s.iter)
 
 	if isLetter(s.char) {
 		i := s.scanIdentifer()
@@ -91,6 +91,12 @@ startScan:
 		tok.ID = token.Asterisk
 	case '/':
 		tok.ID = token.Slash
+		s.next()
+		if s.char == '/' || s.char == '*' {
+			s.scanComment()
+			goto startScan
+		}
+		return
 	case ',':
 		tok.ID = token.Comma
 	case '"':
@@ -112,12 +118,44 @@ startScan:
 	return
 }
 
+func (s *Scanner) scanComment() {
+	// first slash is already consumed
+	if s.char == '/' {
+		for s.char != '\n' {
+			if !s.next() {
+				break
+			}
+		}
+	} else {
+		counter := 1
+
+		for counter != 0 {
+			if !s.next() {
+				break
+			}
+			if s.char == '/' {
+				s.next()
+				if s.char == '*' {
+					s.next()
+					counter++
+				}
+			} else if s.char == '*' {
+				s.next()
+				if s.char == '/' {
+					s.next()
+					counter--
+				}
+			}
+		}
+	}
+}
+
 func (s *Scanner) scanString() string {
 	start := s.iter
 	s.next()
 	for s.char != '"' {
 		if !s.next() {
-			s.file.Error(token.Pos(s.iter)|s.file.PosMask,
+			s.file.Error(s.file.Pos(s.iter),
 				"expected \"")
 			break
 		}
