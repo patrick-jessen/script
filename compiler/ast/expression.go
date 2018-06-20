@@ -11,7 +11,7 @@ type ExpressionNode struct {
 	Immutable  bool
 }
 
-func (e *ExpressionNode) Type() string {
+func (e *ExpressionNode) Type() Type {
 	return e.Expression.Type()
 }
 

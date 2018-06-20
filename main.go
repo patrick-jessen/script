@@ -7,6 +7,5 @@ import (
 
 func main() {
 	compiler.Run(module.Load("./src", "main"))
-
 	// linker.Run()
 }

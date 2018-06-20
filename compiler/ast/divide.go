@@ -11,14 +11,15 @@ import (
 type Divide struct {
 	LHS Expression
 	RHS Expression
+	Typ Type
 }
 
 func (d *Divide) Pos() token.Pos {
 	return d.LHS.Pos()
 }
 
-func (d *Divide) Type() string {
-	panic("not implemented")
+func (d *Divide) Type() Type {
+	return d.Typ
 }
 
 func (d Divide) String() string {

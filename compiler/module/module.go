@@ -10,9 +10,33 @@ import (
 )
 
 type Module struct {
-	name   string
-	source string
-	Files  []*file.File
+	name  string
+	Files []*file.File
+}
+
+func (m *Module) Error(pos token.Pos, message string) {
+	fileIdx := (int(pos) & 0xFF000000) >> 24
+	m.Files[fileIdx].Error(pos, message)
+}
+
+func (m *Module) PosInfo(pos token.Pos) file.PosInfo {
+	fileIdx := (int(pos) & 0xFF000000) >> 24
+	return m.Files[fileIdx].PosInfo(pos)
+}
+
+func (m *Module) HasErrors() bool {
+	for _, f := range m.Files {
+		if f.HasErrors() {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *Module) PrintErrors() {
+	for _, f := range m.Files {
+		f.PrintErrors()
+	}
 }
 
 func Load(dir string, name string) *Module {
@@ -22,22 +46,20 @@ func Load(dir string, name string) *Module {
 		panic(err)
 	}
 
-	mod := &Module{
-		name: name,
-	}
+	mod := &Module{name: name}
 
 	fileIdx := 0
+	fileMask := 0
 
-	// load any *.j file
+	// load all *.j files
 	for _, f := range files {
 		if strings.HasSuffix(f.Name(), ".j") {
-			file := file.Load(token.Pos(fileIdx<<24), path.Join(dir, f.Name()))
+			file := file.Load(token.Pos(fileMask), path.Join(dir, f.Name()))
 			mod.Files = append(mod.Files, file)
 
-			// append to modules source code
-			mod.source += file.Source + "\n"
-			// update offset
+			// update offset and mask
 			fileIdx++
+			fileMask = fileIdx << 24
 		}
 	}
 	return mod

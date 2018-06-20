@@ -19,12 +19,17 @@ type Token struct {
 	Value string // The captured value of the token (not all types of tokens have values)
 }
 
+// String returns the name of the token ID
 func (i ID) String() string {
 	return names[i]
 }
+
+// Name returns the name of the token ID
 func (t Token) Name() string {
 	return t.ID.String()
 }
+
+// String returns a pretty formatting of the token
 func (t Token) String() string {
 	if len(t.Value) > 0 {
 		return fmt.Sprintf("[%v %v]", color.Green(t.ID), color.Yellow(t.Value))

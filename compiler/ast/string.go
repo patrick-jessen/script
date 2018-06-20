@@ -16,6 +16,6 @@ func (s *String) Pos() token.Pos {
 	return s.Token.Pos
 }
 
-func (s *String) Type() string {
-	return "string"
+func (s *String) Type() Type {
+	return Type{Return: "string"}
 }

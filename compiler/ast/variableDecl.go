@@ -16,7 +16,7 @@ type VariableDecl struct {
 func (v *VariableDecl) Name() string {
 	return v.Identifier.Token.Value
 }
-func (v *VariableDecl) Type() string {
+func (v *VariableDecl) Type() Type {
 	return v.Value.Type()
 }
 func (v *VariableDecl) Pos() token.Pos {

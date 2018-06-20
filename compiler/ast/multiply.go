@@ -11,13 +11,14 @@ import (
 type Multiply struct {
 	LHS Expression
 	RHS Expression
+	Typ Type
 }
 
 func (m *Multiply) Pos() token.Pos {
 	return m.LHS.Pos()
 }
-func (m *Multiply) Type() string {
-	panic("not implemented")
+func (m *Multiply) Type() Type {
+	return m.Typ
 }
 
 func (m Multiply) String() string {

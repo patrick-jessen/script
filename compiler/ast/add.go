@@ -11,14 +11,15 @@ import (
 type Add struct {
 	LHS Expression
 	RHS Expression
+	Typ Type
 }
 
 func (a *Add) Pos() token.Pos {
 	return a.LHS.Pos()
 }
 
-func (a *Add) Type() string {
-	panic("not implemented")
+func (a *Add) Type() Type {
+	return a.Typ
 }
 
 func (a Add) String() string {

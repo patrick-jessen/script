@@ -15,7 +15,3 @@ func (i *Identifier) Pos() token.Pos {
 func (i Identifier) String() string {
 	return i.Token.String()
 }
-
-func (i *Identifier) Type() string {
-	panic("not implemented")
-}

@@ -11,13 +11,14 @@ import (
 type Subtract struct {
 	LHS Expression
 	RHS Expression
+	Typ Type
 }
 
 func (s *Subtract) Pos() token.Pos {
 	return s.LHS.Pos()
 }
-func (s *Subtract) Type() string {
-	panic("not implemented")
+func (s *Subtract) Type() Type {
+	return s.Typ
 }
 
 func (s Subtract) String() string {

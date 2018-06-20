@@ -1,8 +1,5 @@
-func print(first string, second string) {
-}
+var testone = 123
 
 func main() {
-    var test = 2
-    // test = "hello"
-    print(test, "world")
+    print(testtwo, "world")
 }

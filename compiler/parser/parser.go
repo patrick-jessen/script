@@ -9,54 +9,52 @@ import (
 	"github.com/patrick-jessen/script/compiler/token"
 )
 
+func (p *Parser) Symbols() map[string]ast.Declarable {
+	return p.rootScope.symbols
+}
+
+type Link struct {
+	Decl ast.Declarable
+	Ref  ast.Resolvable
+}
+
 type Scope struct {
-	symbols map[string]ast.Decl
-	file    *file.File
+	parent  *Scope
+	symbols map[string]ast.Declarable
 }
 
-func NewScope(f *file.File) *Scope {
+func NewScope(parent *Scope) *Scope {
 	return &Scope{
-		symbols: make(map[string]ast.Decl),
-		file:    f,
+		parent:  parent,
+		symbols: make(map[string]ast.Declarable),
 	}
 }
 
-func (s *Scope) Declare(f ast.Decl) {
-	name := f.Name()
-	sym, ok := s.symbols[name]
+func (p *Parser) Declare(d ast.Declarable) {
+	name := d.Name()
+	sym, ok := p.curScope.symbols[name]
 	if ok {
-		s.file.Error(f.Pos(), fmt.Sprintf(
+		p.file.Error(d.Pos(), fmt.Sprintf(
 			"redeclaration of symbol '%v'. First declared here: (%v)",
-			name, s.file.PosInfo(sym.Pos()).Link(),
+			name, p.file.PosInfo(sym.Pos()).Link(),
 		))
 		return
 	}
-
-	s.symbols[name] = f
+	p.curScope.symbols[name] = d
 }
-func (s *Scope) Expect(f ast.Ref) {
-	name := f.Name()
-	sym, ok := s.symbols[name]
-	if !ok {
-		s.file.Error(f.Pos(), fmt.Sprintf(
-			"undeclared symbol '%v'", name,
-		))
-		return
-	}
+func (p *Parser) Resolve(r ast.Resolvable) {
+	name := r.Name()
+	scope := p.curScope
 
-	fmt.Println(sym, f)
-	fmt.Println("-------------")
-
-	if f.Type() == "" {
-		f.(*ast.VariableRef).Typ = sym.Type()
-	} else {
-		if f.Type() != sym.Type() {
-			s.file.Error(f.Pos(), fmt.Sprintf(
-				"cannot use %v%v as type %v",
-				name, sym.Type(), f.Type(),
-			))
+	for scope != nil {
+		sym, ok := scope.symbols[name]
+		if ok {
+			r.SetType(sym.Type())
+			return
 		}
+		scope = scope.parent
 	}
+	p.Unresolved = append(p.Unresolved, Link{Ref: r})
 }
 
 type Parser struct {
@@ -65,23 +63,30 @@ type Parser struct {
 	scanner scanner.Scanner
 	tok     token.Token
 
-	scope *Scope
+	rootScope *Scope
+	curScope  *Scope
+
+	Unresolved []Link
 }
 
 func New(file *file.File) (p *Parser) {
 	p = &Parser{
-		file:  file,
-		scope: NewScope(file),
+		file:      file,
+		rootScope: NewScope(nil),
 	}
-	p.scanner.Init(file)
-	p.next()
 	return p
+}
+
+func (p *Parser) pushScope() {
+	p.curScope = NewScope(p.curScope)
+}
+func (p *Parser) popScope() {
+	p.curScope = p.curScope.parent
 }
 
 func (p *Parser) next() {
 	if p.tok.ID == token.EOF {
-		fmt.Println(p.file.Errors)
-		panic("eof")
+		panic("EOF reached")
 	}
 	p.tok = p.scanner.Scan()
 }
@@ -89,9 +94,6 @@ func (p *Parser) next() {
 func (p *Parser) expect(id token.ID) {
 	if p.tok.ID != id {
 		p.file.Error(p.tok.Pos, fmt.Sprintf("expected %v", id.String()))
-		if len(p.file.Errors) > 10 {
-			panic("too many errors")
-		}
 	} else {
 		p.next()
 	}
@@ -117,17 +119,70 @@ func (p *Parser) parseFunctionCallArgs() *ast.FunctionCallArgs {
 	return ast
 }
 
-func (p *Parser) parseFunctionCall() *ast.FunctionCall {
+func (p *Parser) parseFunctionCall(ident *ast.Identifier) *ast.FunctionCall {
 	ast := &ast.FunctionCall{}
+	// numArgs := 0
 
-	ast.Identifier = p.parseIdentifier()
+	ast.Identifier = ident
 	p.expect(token.ParentStart)
 	if p.tok.ID != token.ParentEnd {
 		ast.Args = p.parseFunctionCallArgs()
+		// numArgs = len(ast.Args.Args)
 	}
+	// parentEndPos := p.tok.Pos
 	p.expect(token.ParentEnd)
 
-	p.scope.Expect(ast)
+	p.Resolve(ast)
+
+	// if ast.Type() == "" {
+	// 	return ast
+	// }
+	// tsplit := strings.Split(ast.Type(), " -> ")
+	// argsstr := tsplit[0]
+	// args := strings.Split(argsstr[1:len(argsstr)-1], ",")
+
+	// for i := 0; i < numArgs; i++ {
+	// 	a := ast.Args.Args[i]
+	// 	if len(args) <= i {
+	// 		p.file.Error(a.Pos(), fmt.Sprintf(
+	// 			"too many arguments, expected %v got %v", len(args), numArgs,
+	// 		))
+	// 		break
+	// 	}
+	// 	if args[i] != a.Type() {
+	// 		typ := a.Type()
+	// 		if typ == "" {
+	// 			typ = "undeclared"
+	// 		}
+	// 		p.file.Error(a.Pos(), fmt.Sprintf(
+	// 			"cannot use %v as %v", typ, args[i],
+	// 		))
+	// 	}
+	// }
+	// if len(args) > numArgs {
+	// 	p.file.Error(parentEndPos, fmt.Sprintf(
+	// 		"too few arguments, expected %v got %v", len(args), numArgs,
+	// 	))
+	// }
+
+	return ast
+}
+
+func (p *Parser) parseVariableAssign(ident *ast.Identifier) *ast.VariableAssign {
+	ast := &ast.VariableAssign{}
+
+	ast.Identifier = ident
+	p.expect(token.Equal)
+	ast.Value = p.parseExpression()
+
+	p.Resolve(ast)
+	// if ast.Type() != ast.Value.Type() {
+	// 	p.file.Error(ast.Value.Pos(), fmt.Sprintf(
+	// 		"cannot assign '%v' (type %v) with type %v",
+	// 		ast.Name(), ast.Type(), ast.Value.Type()),
+	// 	)
+	// }
+
 	return ast
 }
 
@@ -136,7 +191,12 @@ func (p *Parser) parseStatement() (n ast.Node) {
 	case token.Var:
 		n = p.parseVariableDecl()
 	case token.Identifier:
-		n = p.parseFunctionCall()
+		ident := p.parseIdentifier()
+		if p.tok.ID == token.ParentStart {
+			n = p.parseFunctionCall(ident)
+		} else {
+			n = p.parseVariableAssign(ident)
+		}
 	default:
 		p.file.Error(p.tok.Pos, "expected statement")
 		p.next()
@@ -157,7 +217,9 @@ func (p *Parser) parseBlock() *ast.Block {
 			continue
 		}
 		stmt := p.parseStatement()
-		ast.Statements = append(ast.Statements, stmt)
+		if stmt != nil {
+			ast.Statements = append(ast.Statements, stmt)
+		}
 	}
 	p.expect(token.CurlEnd)
 	return ast
@@ -167,7 +229,7 @@ func (p *Parser) parseExpression() ast.Expression {
 	// Shunting-yard algorithm
 	var val ast.Expression
 	var out []interface{}
-	var ops []token.ID
+	var ops []token.Token
 
 loop:
 	for {
@@ -178,7 +240,7 @@ loop:
 			ident := p.parseIdentifier()
 			ref := &ast.VariableRef{Identifier: ident}
 			val = ref
-			p.scope.Expect(ref)
+			p.Resolve(ref)
 		case token.Integer:
 			val = p.parseInteger()
 		case token.Float:
@@ -202,19 +264,19 @@ loop:
 				out = append(out, ops[i])
 				ops = ops[:i]
 			}
-			ops = append(ops, p.tok.ID)
+			ops = append(ops, p.tok)
 			p.expect(p.tok.ID)
 
 		case token.Asterisk:
 			fallthrough
 		case token.Slash:
 			for i := len(ops) - 1; i >= 0; i-- {
-				if ops[i] == token.Asterisk || ops[i] == token.Slash {
+				if ops[i].ID == token.Asterisk || ops[i].ID == token.Slash {
 					out = append(out, ops[i])
 					ops = ops[:i]
 				}
 			}
-			ops = append(ops, p.tok.ID)
+			ops = append(ops, p.tok)
 			p.expect(p.tok.ID)
 		default:
 			break loop
@@ -232,33 +294,51 @@ loop:
 		switch v.(type) {
 		case nil:
 			return nil
-		case token.ID:
+		case token.Token:
 			lhs := valStack[len(valStack)-2]
 			rhs := valStack[len(valStack)-1]
 			valStack = valStack[:len(valStack)-2]
 
-			switch v.(token.ID) {
+			typ := lhs.Type()
+			var errMsg string
+
+			switch v.(token.Token).ID {
 			case token.Plus:
 				expr = &ast.Add{
 					LHS: lhs,
 					RHS: rhs,
+					Typ: typ,
 				}
+				errMsg = "add"
 			case token.Minus:
 				expr = &ast.Subtract{
 					LHS: lhs,
 					RHS: rhs,
+					Typ: typ,
 				}
+				errMsg = "subtract"
 			case token.Asterisk:
 				expr = &ast.Multiply{
 					LHS: lhs,
 					RHS: rhs,
+					Typ: typ,
 				}
+				errMsg = "multiply"
 			case token.Slash:
 				expr = &ast.Divide{
 					LHS: lhs,
 					RHS: rhs,
+					Typ: typ,
 				}
+				errMsg = "divide"
 			}
+
+			if lhs.Type().Return != rhs.Type().Return {
+				p.file.Error(v.(token.Token).Pos, fmt.Sprintf(
+					"cannot %v types %v and %v", errMsg, lhs.Type(), rhs.Type(),
+				))
+			}
+
 			valStack = append(valStack, expr)
 		default:
 			valStack = append(valStack, v.(ast.Expression))
@@ -319,9 +399,12 @@ func (p *Parser) parseFunctionDecl() *ast.FunctionDecl {
 		ast.Args = p.parseFunctionDeclArgs()
 	}
 	p.expect(token.ParentEnd)
-	ast.Block = p.parseBlock()
 
-	p.scope.Declare(ast)
+	p.pushScope()
+	ast.Block = p.parseBlock()
+	p.popScope()
+
+	p.Declare(ast)
 	return ast
 }
 func (p *Parser) parseVariableDecl() *ast.VariableDecl {
@@ -332,7 +415,7 @@ func (p *Parser) parseVariableDecl() *ast.VariableDecl {
 	p.expect(token.Equal)
 	ast.Value = p.parseExpression()
 
-	p.scope.Declare(ast)
+	p.Declare(ast)
 	return ast
 }
 
@@ -360,12 +443,25 @@ func (p *Parser) parseFile() *ast.File {
 			continue
 		}
 		decl := p.parseDeclaration()
-		ast.Declarations = append(ast.Declarations, decl)
+		if decl != nil {
+			ast.Declarations = append(ast.Declarations, decl)
+		}
 	}
 
 	return ast
 }
 
-func Run(f *file.File) ast.Node {
-	return New(f).parseFile()
+func (p *Parser) Run() ast.Node {
+	p.tok = token.Token{}
+	p.curScope = p.rootScope
+	p.scanner.Init(p.file)
+	p.next()
+
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println(e)
+			// panic(e)
+		}
+	}()
+	return p.parseFile()
 }

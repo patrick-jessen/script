@@ -5,32 +5,43 @@ import (
 	"github.com/patrick-jessen/script/compiler/token"
 )
 
+// Scanner is used for tokenizing a source file
 type Scanner struct {
-	iter int
-	file *file.File
-	char byte
+	file *file.File // the source file
+	iter int        // current index into the source string
+	char byte       // current character
 }
 
+// Init initializes the scanner
+// Must be called before use
 func (s *Scanner) Init(file *file.File) {
 	s.file = file
+	s.iter = 0
 	s.char = file.Source[0]
 }
 
+// next advances the scanner to the next character in the source string.
+// Returns false if EOF is reached, otherwise true.
 func (s *Scanner) next() bool {
 	s.iter++
+
 	if s.iter < len(s.file.Source) {
+		// set current character
 		s.char = s.file.Source[s.iter]
 
+		// mark newlines - this is done to help the file resolve token positions
 		if s.char == '\n' {
 			s.file.MarkLine(s.iter)
 		}
-
 		return true
 	}
+
+	// EOF is reached
 	s.char = '\n' // insert newline at the end of file
 	return false
 }
 
+// Scan scans the next token.
 func (s *Scanner) Scan() (tok token.Token) {
 startScan:
 	if s.iter >= len(s.file.Source)+1 {

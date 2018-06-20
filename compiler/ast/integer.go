@@ -14,6 +14,6 @@ func (i *Integer) String() string {
 	return i.Token.String()
 }
 
-func (i *Integer) Type() string {
-	return "int"
+func (i *Integer) Type() Type {
+	return Type{Return: "int"}
 }
