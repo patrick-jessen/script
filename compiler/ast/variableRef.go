@@ -4,7 +4,6 @@ import "github.com/patrick-jessen/script/compiler/token"
 
 type VariableRef struct {
 	Identifier *Identifier
-	typ        Type
 }
 
 func (v *VariableRef) Name() string {
@@ -20,8 +19,11 @@ func (v *VariableRef) String() string {
 }
 
 func (v *VariableRef) Type() Type {
-	return v.typ
+	return v.Identifier.Type()
 }
 func (v *VariableRef) SetType(t Type) {
-	v.typ = t
+	v.Identifier.Typ = t
+}
+
+func (v *VariableRef) TypeCheck(errFn ErrorFunc) {
 }

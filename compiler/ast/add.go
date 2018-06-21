@@ -9,9 +9,9 @@ import (
 )
 
 type Add struct {
-	LHS Expression
-	RHS Expression
-	Typ Type
+	LHS   Expression
+	RHS   Expression
+	OpPos token.Pos
 }
 
 func (a *Add) Pos() token.Pos {
@@ -19,7 +19,7 @@ func (a *Add) Pos() token.Pos {
 }
 
 func (a *Add) Type() Type {
-	return a.Typ
+	return a.LHS.Type()
 }
 
 func (a Add) String() string {
@@ -32,4 +32,14 @@ func (a Add) String() string {
 		strings.Replace(lhs, "\n", "\n  ", -1),
 		strings.Replace(rhs, "\n", "\n  ", -1),
 	)
+}
+func (a *Add) TypeCheck(errFn ErrorFunc) {
+	lhsTyp := a.LHS.Type()
+	rhsTyp := a.RHS.Type()
+
+	if lhsTyp.IsResolved && rhsTyp.IsResolved {
+		if lhsTyp.Return != rhsTyp.Return {
+			errFn(a.OpPos, fmt.Sprintf("cannot add types %v and %v", lhsTyp, rhsTyp))
+		}
+	}
 }

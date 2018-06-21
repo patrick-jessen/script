@@ -4,9 +4,12 @@ import (
 	"github.com/patrick-jessen/script/compiler/token"
 )
 
+type ErrorFunc func(token.Pos, string)
+
 type Node interface {
 	Pos() token.Pos
 	String() string
+	TypeCheck(ErrorFunc)
 }
 
 type Expression interface {
@@ -20,14 +23,8 @@ type Declarable interface {
 	Name() string
 }
 
-type Resolvable interface {
-	Node
-	Type() Type
-	Name() string
-	SetType(t Type)
-}
-
 type Type struct {
+	IsResolved bool
 	IsFunction bool
 	Return     string
 	Args       []string
@@ -46,4 +43,17 @@ func (t Type) String() (out string) {
 	}
 	out += ") -> " + t.Return
 	return
+}
+func (t Type) IsCompatible(other Type) bool {
+	if !t.IsResolved || !other.IsResolved {
+		return true
+	}
+	if t.IsFunction != other.IsFunction {
+		return false
+	}
+	if !t.IsFunction {
+		return t.Return == other.Return
+	}
+
+	return false
 }

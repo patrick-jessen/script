@@ -22,3 +22,5 @@ func (e *ExpressionNode) Pos() token.Pos {
 func (e ExpressionNode) String() string {
 	return fmt.Sprintf("%v", e.Expression)
 }
+func (*ExpressionNode) TypeCheck(errFn ErrorFunc) {
+}

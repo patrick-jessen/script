@@ -34,23 +34,25 @@ func Run(mod *module.Module) {
 
 	for _, p := range parsers {
 		for _, u := range p.Unresolved {
-			sym, ok := symbols[u.Ref.Name()]
+			name := u.Token.Value
+			sym, ok := symbols[name]
 			if !ok {
-				mod.Error(u.Ref.Pos(), fmt.Sprintf("unresolved symbol '%v'", u.Ref.Name()))
+				mod.Error(u.Pos(), fmt.Sprintf("unresolved symbol '%v'", name))
 				continue
 			}
 
-			u.Ref.SetType(sym.Type())
-			u.Decl = sym
+			u.Typ = sym.Type()
 		}
-	}
-
-	if mod.HasErrors() {
-		mod.PrintErrors()
 	}
 
 	for _, v := range symbols {
 		fmt.Println(v)
+		v.TypeCheck(mod.Error)
+	}
+
+	if mod.HasErrors() {
+		fmt.Println("-ERRORS--------------------")
+		mod.PrintErrors()
 	}
 
 	// link module

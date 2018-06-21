@@ -32,7 +32,7 @@ func (t Token) Name() string {
 // String returns a pretty formatting of the token
 func (t Token) String() string {
 	if len(t.Value) > 0 {
-		return fmt.Sprintf("[%v %v]", color.Green(t.ID), color.Yellow(t.Value))
+		return fmt.Sprintf("[%v %v]", color.Yellow(t.Value), color.Green(t.ID))
 	}
 	return fmt.Sprintf("[%v]", color.Green(t.ID))
 }

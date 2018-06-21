@@ -9,9 +9,9 @@ import (
 )
 
 type Divide struct {
-	LHS Expression
-	RHS Expression
-	Typ Type
+	LHS   Expression
+	RHS   Expression
+	OpPos token.Pos
 }
 
 func (d *Divide) Pos() token.Pos {
@@ -19,7 +19,7 @@ func (d *Divide) Pos() token.Pos {
 }
 
 func (d *Divide) Type() Type {
-	return d.Typ
+	return d.LHS.Type()
 }
 
 func (d Divide) String() string {
@@ -32,4 +32,6 @@ func (d Divide) String() string {
 		strings.Replace(lhs, "\n", "\n  ", -1),
 		strings.Replace(rhs, "\n", "\n  ", -1),
 	)
+}
+func (*Divide) TypeCheck(errFn ErrorFunc) {
 }

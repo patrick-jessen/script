@@ -17,7 +17,11 @@ type Scanner struct {
 func (s *Scanner) Init(file *file.File) {
 	s.file = file
 	s.iter = 0
-	s.char = file.Source[0]
+	if len(file.Source) > 0 {
+		s.char = file.Source[0]
+	} else {
+		s.char = '\n'
+	}
 }
 
 // next advances the scanner to the next character in the source string.

@@ -9,9 +9,9 @@ import (
 )
 
 type FunctionCall struct {
-	Identifier *Identifier
-	Args       *FunctionCallArgs
-	typ        Type
+	Identifier    *Identifier
+	Args          *FunctionCallArgs
+	LastParentPos token.Pos
 }
 
 func (f *FunctionCall) Name() string {
@@ -24,10 +24,9 @@ func (f *FunctionCall) Pos() token.Pos {
 
 func (f FunctionCall) String() (out string) {
 	out = fmt.Sprintf(
-		"%v identifier=%v\t%v",
+		"%v %v",
 		color.Red("FunctionCall"),
 		f.Identifier,
-		color.Blue(f.Type()),
 	)
 	if f.Args != nil {
 		argArr := f.Args.Args
@@ -44,9 +43,35 @@ func (f FunctionCall) String() (out string) {
 }
 
 func (f *FunctionCall) Type() Type {
-	return f.typ
+	return f.Identifier.Type()
 }
 
 func (f *FunctionCall) SetType(t Type) {
-	f.typ = t
+	f.Identifier.Typ = t
+}
+func (f *FunctionCall) TypeCheck(errFn ErrorFunc) {
+	numArgs := 0
+	if f.Args != nil {
+		f.Args.TypeCheck(errFn)
+		numArgs = len(f.Args.Args)
+	}
+
+	if numArgs != len(f.Type().Args) {
+		errFn(f.LastParentPos, fmt.Sprintf(
+			"incorrect number of arguments. Expected %v, got %v",
+			len(f.Type().Args), numArgs,
+		))
+	}
+	for i, a := range f.Type().Args {
+		if i == numArgs {
+			break
+		}
+
+		r := f.Args.Args[i].Type().Return
+		if r != a {
+			errFn(f.Args.Args[i].Pos(), fmt.Sprintf(
+				"expected %v, got %v", a, r,
+			))
+		}
+	}
 }

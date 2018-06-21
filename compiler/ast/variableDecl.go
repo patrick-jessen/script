@@ -26,13 +26,18 @@ func (v *VariableDecl) Pos() token.Pos {
 func (v *VariableDecl) String() string {
 	val := fmt.Sprintf("  %v", v.Value)
 
-	typ := v.Value.Type()
-
 	return fmt.Sprintf(
-		"%v identifier=%v\t%v\n%v",
+		"%v %v\n%v",
 		color.Red("VariableDecl"),
 		v.Identifier,
-		color.Blue(typ),
 		strings.Replace(val, "\n", "\n  ", -1),
 	)
+}
+
+func (v *VariableDecl) TypeCheck(errFn ErrorFunc) {
+	v.Value.TypeCheck(errFn)
+
+	if !v.Identifier.Type().IsCompatible(v.Value.Type()) {
+		errFn(v.Value.Pos(), fmt.Sprintf("cannot assign type %v to %v", v.Value.Type(), v.Identifier.Type()))
+	}
 }

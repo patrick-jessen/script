@@ -20,10 +20,9 @@ func (f *FunctionDecl) Name() string {
 
 func (f FunctionDecl) String() (out string) {
 	out = fmt.Sprintf(
-		"%v identifier=%v\t%v",
+		"%v %v",
 		color.Red("FunctionDecl"),
 		f.Identifier,
-		color.Blue(f.Type()),
 	)
 	if len(f.Block.Statements) > 0 {
 		block := fmt.Sprintf("  %v", f.Block)
@@ -32,7 +31,7 @@ func (f FunctionDecl) String() (out string) {
 	return
 }
 
-func (f *FunctionDecl) Type() Type {
+func (f *FunctionDecl) Init() {
 	var args []string
 
 	if f.Args != nil {
@@ -41,13 +40,21 @@ func (f *FunctionDecl) Type() Type {
 		}
 	}
 
-	return Type{
+	f.Identifier.Typ = Type{
+		IsResolved: true,
 		IsFunction: true,
 		Return:     "void",
 		Args:       args,
 	}
 }
 
+func (f *FunctionDecl) Type() Type {
+	return f.Identifier.Type()
+}
+
 func (f *FunctionDecl) Pos() token.Pos {
 	return f.Identifier.Pos()
+}
+func (f *FunctionDecl) TypeCheck(errFn ErrorFunc) {
+	f.Block.TypeCheck(errFn)
 }

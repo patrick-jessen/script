@@ -17,5 +17,10 @@ func (s *String) Pos() token.Pos {
 }
 
 func (s *String) Type() Type {
-	return Type{Return: "string"}
+	return Type{
+		IsResolved: true,
+		Return:     "string",
+	}
+}
+func (*String) TypeCheck(errFn ErrorFunc) {
 }

@@ -15,5 +15,10 @@ func (i *Integer) String() string {
 }
 
 func (i *Integer) Type() Type {
-	return Type{Return: "int"}
+	return Type{
+		IsResolved: true,
+		Return:     "int",
+	}
+}
+func (*Integer) TypeCheck(errFn ErrorFunc) {
 }

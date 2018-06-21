@@ -10,3 +10,8 @@ func (b *Block) String() (out string) {
 	}
 	return
 }
+func (b *Block) TypeCheck(errFn ErrorFunc) {
+	for _, s := range b.Statements {
+		s.TypeCheck(errFn)
+	}
+}

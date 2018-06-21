@@ -9,16 +9,16 @@ import (
 )
 
 type Subtract struct {
-	LHS Expression
-	RHS Expression
-	Typ Type
+	LHS   Expression
+	RHS   Expression
+	OpPos token.Pos
 }
 
 func (s *Subtract) Pos() token.Pos {
 	return s.LHS.Pos()
 }
 func (s *Subtract) Type() Type {
-	return s.Typ
+	return s.LHS.Type()
 }
 
 func (s Subtract) String() string {
@@ -31,4 +31,6 @@ func (s Subtract) String() string {
 		strings.Replace(lhs, "\n", "\n  ", -1),
 		strings.Replace(rhs, "\n", "\n  ", -1),
 	)
+}
+func (*Subtract) TypeCheck(errFn ErrorFunc) {
 }

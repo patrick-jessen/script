@@ -13,11 +13,6 @@ func (p *Parser) Symbols() map[string]ast.Declarable {
 	return p.rootScope.symbols
 }
 
-type Link struct {
-	Decl ast.Declarable
-	Ref  ast.Resolvable
-}
-
 type Scope struct {
 	parent  *Scope
 	symbols map[string]ast.Declarable
@@ -42,19 +37,19 @@ func (p *Parser) Declare(d ast.Declarable) {
 	}
 	p.curScope.symbols[name] = d
 }
-func (p *Parser) Resolve(r ast.Resolvable) {
-	name := r.Name()
+func (p *Parser) Resolve(i *ast.Identifier) {
+	name := i.Token.Value
 	scope := p.curScope
 
 	for scope != nil {
 		sym, ok := scope.symbols[name]
 		if ok {
-			r.SetType(sym.Type())
+			i.Typ = sym.Type()
 			return
 		}
 		scope = scope.parent
 	}
-	p.Unresolved = append(p.Unresolved, Link{Ref: r})
+	p.Unresolved = append(p.Unresolved, i)
 }
 
 type Parser struct {
@@ -66,7 +61,7 @@ type Parser struct {
 	rootScope *Scope
 	curScope  *Scope
 
-	Unresolved []Link
+	Unresolved []*ast.Identifier
 }
 
 func New(file *file.File) (p *Parser) {
@@ -121,50 +116,15 @@ func (p *Parser) parseFunctionCallArgs() *ast.FunctionCallArgs {
 
 func (p *Parser) parseFunctionCall(ident *ast.Identifier) *ast.FunctionCall {
 	ast := &ast.FunctionCall{}
-	// numArgs := 0
 
 	ast.Identifier = ident
 	p.expect(token.ParentStart)
 	if p.tok.ID != token.ParentEnd {
 		ast.Args = p.parseFunctionCallArgs()
-		// numArgs = len(ast.Args.Args)
 	}
-	// parentEndPos := p.tok.Pos
+	ast.LastParentPos = p.tok.Pos
 	p.expect(token.ParentEnd)
-
-	p.Resolve(ast)
-
-	// if ast.Type() == "" {
-	// 	return ast
-	// }
-	// tsplit := strings.Split(ast.Type(), " -> ")
-	// argsstr := tsplit[0]
-	// args := strings.Split(argsstr[1:len(argsstr)-1], ",")
-
-	// for i := 0; i < numArgs; i++ {
-	// 	a := ast.Args.Args[i]
-	// 	if len(args) <= i {
-	// 		p.file.Error(a.Pos(), fmt.Sprintf(
-	// 			"too many arguments, expected %v got %v", len(args), numArgs,
-	// 		))
-	// 		break
-	// 	}
-	// 	if args[i] != a.Type() {
-	// 		typ := a.Type()
-	// 		if typ == "" {
-	// 			typ = "undeclared"
-	// 		}
-	// 		p.file.Error(a.Pos(), fmt.Sprintf(
-	// 			"cannot use %v as %v", typ, args[i],
-	// 		))
-	// 	}
-	// }
-	// if len(args) > numArgs {
-	// 	p.file.Error(parentEndPos, fmt.Sprintf(
-	// 		"too few arguments, expected %v got %v", len(args), numArgs,
-	// 	))
-	// }
-
+	p.Resolve(ast.Identifier)
 	return ast
 }
 
@@ -175,14 +135,7 @@ func (p *Parser) parseVariableAssign(ident *ast.Identifier) *ast.VariableAssign 
 	p.expect(token.Equal)
 	ast.Value = p.parseExpression()
 
-	p.Resolve(ast)
-	// if ast.Type() != ast.Value.Type() {
-	// 	p.file.Error(ast.Value.Pos(), fmt.Sprintf(
-	// 		"cannot assign '%v' (type %v) with type %v",
-	// 		ast.Name(), ast.Type(), ast.Value.Type()),
-	// 	)
-	// }
-
+	p.Resolve(ast.Identifier)
 	return ast
 }
 
@@ -240,7 +193,7 @@ loop:
 			ident := p.parseIdentifier()
 			ref := &ast.VariableRef{Identifier: ident}
 			val = ref
-			p.Resolve(ref)
+			p.Resolve(ref.Identifier)
 		case token.Integer:
 			val = p.parseInteger()
 		case token.Float:
@@ -299,44 +252,32 @@ loop:
 			rhs := valStack[len(valStack)-1]
 			valStack = valStack[:len(valStack)-2]
 
-			typ := lhs.Type()
-			var errMsg string
-
-			switch v.(token.Token).ID {
+			tok := v.(token.Token)
+			switch tok.ID {
 			case token.Plus:
 				expr = &ast.Add{
-					LHS: lhs,
-					RHS: rhs,
-					Typ: typ,
+					LHS:   lhs,
+					RHS:   rhs,
+					OpPos: tok.Pos,
 				}
-				errMsg = "add"
 			case token.Minus:
 				expr = &ast.Subtract{
-					LHS: lhs,
-					RHS: rhs,
-					Typ: typ,
+					LHS:   lhs,
+					RHS:   rhs,
+					OpPos: tok.Pos,
 				}
-				errMsg = "subtract"
 			case token.Asterisk:
 				expr = &ast.Multiply{
-					LHS: lhs,
-					RHS: rhs,
-					Typ: typ,
+					LHS:   lhs,
+					RHS:   rhs,
+					OpPos: tok.Pos,
 				}
-				errMsg = "multiply"
 			case token.Slash:
 				expr = &ast.Divide{
-					LHS: lhs,
-					RHS: rhs,
-					Typ: typ,
+					LHS:   lhs,
+					RHS:   rhs,
+					OpPos: tok.Pos,
 				}
-				errMsg = "divide"
-			}
-
-			if lhs.Type().Return != rhs.Type().Return {
-				p.file.Error(v.(token.Token).Pos, fmt.Sprintf(
-					"cannot %v types %v and %v", errMsg, lhs.Type(), rhs.Type(),
-				))
 			}
 
 			valStack = append(valStack, expr)
@@ -389,6 +330,16 @@ func (p *Parser) parseFunctionDeclArgs() *ast.FunctionDeclArgs {
 	return ast
 }
 
+func (p *Parser) parseType() ast.Type {
+	typ := ast.Type{
+		IsResolved: true,
+	}
+
+	typ.Return = p.tok.Value
+	p.expect(token.Identifier)
+	return typ
+}
+
 func (p *Parser) parseFunctionDecl() *ast.FunctionDecl {
 	ast := &ast.FunctionDecl{}
 
@@ -405,6 +356,8 @@ func (p *Parser) parseFunctionDecl() *ast.FunctionDecl {
 	p.popScope()
 
 	p.Declare(ast)
+	ast.Init()
+
 	return ast
 }
 func (p *Parser) parseVariableDecl() *ast.VariableDecl {
@@ -412,6 +365,9 @@ func (p *Parser) parseVariableDecl() *ast.VariableDecl {
 
 	p.expect(token.Var)
 	ast.Identifier = p.parseIdentifier()
+	if p.tok.ID != token.Equal {
+		ast.Identifier.Typ = p.parseType()
+	}
 	p.expect(token.Equal)
 	ast.Value = p.parseExpression()
 

@@ -11,9 +11,14 @@ func (f *Float) Pos() token.Pos {
 }
 
 func (f *Float) Type() Type {
-	return Type{Return: "float"}
+	return Type{
+		IsResolved: true,
+		Return:     "float",
+	}
 }
 
 func (f *Float) String() string {
 	return f.Token.String()
+}
+func (*Float) TypeCheck(errFn ErrorFunc) {
 }

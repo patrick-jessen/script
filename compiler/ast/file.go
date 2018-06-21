@@ -20,3 +20,5 @@ func (m File) String() (out string) {
 	}
 	return
 }
+func (*File) TypeCheck(errFn ErrorFunc) {
+}
