@@ -15,7 +15,7 @@ type FunctionCall struct {
 }
 
 func (f *FunctionCall) Name() string {
-	return f.Identifier.Token.Value
+	return f.Identifier.Name()
 }
 
 func (f *FunctionCall) Pos() token.Pos {

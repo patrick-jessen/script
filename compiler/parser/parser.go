@@ -37,19 +37,36 @@ func (p *Parser) Declare(d ast.Declarable) {
 	}
 	p.curScope.symbols[name] = d
 }
-func (p *Parser) Resolve(i *ast.Identifier) {
-	name := i.Token.Value
+func (p *Parser) Resolve(ident *ast.Identifier) {
+	mod := ident.Module.Value
 	scope := p.curScope
 
-	for scope != nil {
-		sym, ok := scope.symbols[name]
-		if ok {
-			i.Typ = sym.Type()
-			return
+	if len(mod) == 0 {
+		// the symbol belongs to this module
+		for scope != nil {
+			sym, ok := scope.symbols[ident.Symbol.Value]
+			if ok {
+				ident.Typ = sym.Type()
+				return
+			}
+			scope = scope.parent
 		}
-		scope = scope.parent
+		// cannot be resolved yet
+		p.Unresolved = append(p.Unresolved, ident)
+
+	} else {
+		// the symbol belongs to another module.
+		// assert that the particular module is imported.
+		for _, i := range p.ImportedModules {
+			if i.Value == mod {
+				p.Imports = append(p.Imports, ident)
+				return
+			}
+		}
+		p.file.Error(ident.Module.Pos, fmt.Sprintf(
+			"module '%v' not imported", ident.Module.Value,
+		))
 	}
-	p.Unresolved = append(p.Unresolved, i)
 }
 
 type Parser struct {
@@ -61,7 +78,9 @@ type Parser struct {
 	rootScope *Scope
 	curScope  *Scope
 
-	Unresolved []*ast.Identifier
+	Unresolved      []*ast.Identifier // unresolved module-local symbols
+	Imports         []*ast.Identifier // external symbols
+	ImportedModules []token.Token     // names of imported modules
 }
 
 func New(file *file.File) (p *Parser) {
@@ -70,6 +89,17 @@ func New(file *file.File) (p *Parser) {
 		rootScope: NewScope(nil),
 	}
 	return p
+}
+
+func (p *Parser) importModule(tok token.Token) {
+	for _, i := range p.ImportedModules {
+		if i.Value == tok.Value {
+			p.file.Error(tok.Pos, fmt.Sprintf(
+				"duplicate import '%v'", tok.Value,
+			))
+		}
+	}
+	p.ImportedModules = append(p.ImportedModules, tok)
 }
 
 func (p *Parser) pushScope() {
@@ -132,6 +162,7 @@ func (p *Parser) parseVariableAssign(ident *ast.Identifier) *ast.VariableAssign 
 	ast := &ast.VariableAssign{}
 
 	ast.Identifier = ident
+	ast.EqPos = p.tok.Pos
 	p.expect(token.Equal)
 	ast.Value = p.parseExpression()
 
@@ -308,8 +339,20 @@ func (p *Parser) parseString() *ast.String {
 }
 
 func (p *Parser) parseIdentifier() *ast.Identifier {
-	ast := &ast.Identifier{Token: p.tok}
+	ast := &ast.Identifier{}
+
+	ident := p.tok
 	p.expect(token.Identifier)
+
+	if p.tok.ID == token.Dot {
+		p.expect(token.Dot)
+		ast.Module = ident
+		ast.Symbol = p.tok
+		p.expect(token.Identifier)
+	} else {
+		ast.Symbol = ident
+	}
+
 	return ast
 }
 
@@ -355,9 +398,9 @@ func (p *Parser) parseFunctionDecl() *ast.FunctionDecl {
 	ast.Block = p.parseBlock()
 	p.popScope()
 
-	p.Declare(ast)
 	ast.Init()
 
+	p.Declare(ast)
 	return ast
 }
 func (p *Parser) parseVariableDecl() *ast.VariableDecl {
@@ -390,8 +433,23 @@ func (p *Parser) parseDeclaration() (n ast.Node) {
 	return
 }
 
+func (p *Parser) parseImport() {
+	p.expect(token.Import)
+	modTok := p.tok
+	p.expect(token.String)
+	p.expect(token.NewLine)
+	p.importModule(modTok)
+}
+
 func (p *Parser) parseFile() *ast.File {
 	ast := &ast.File{}
+
+	for p.tok.ID == token.Import {
+		p.parseImport()
+		if p.tok.ID == token.NewLine {
+			p.expect(token.NewLine)
+		}
+	}
 
 	for p.tok.ID != token.EOF {
 		if p.tok.ID == token.NewLine {

@@ -56,6 +56,7 @@ var names = map[ID]string{
 	CurlStart:   "{",
 	CurlEnd:     "}",
 	Comma:       ",",
+	Dot:         ".",
 	Float:       "float",
 	Integer:     "integer",
 	String:      "string",
@@ -80,6 +81,7 @@ const (
 	CurlStart
 	CurlEnd
 	Comma
+	Dot
 	Float
 	Integer
 	String

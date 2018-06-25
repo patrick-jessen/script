@@ -14,7 +14,7 @@ type VariableDecl struct {
 }
 
 func (v *VariableDecl) Name() string {
-	return v.Identifier.Token.Value
+	return v.Identifier.Name()
 }
 func (v *VariableDecl) Type() Type {
 	return v.Value.Type()

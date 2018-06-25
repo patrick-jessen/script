@@ -1,10 +1,7 @@
-func print(first string, second string) {
-}
-
+import "fmt"
 
 func main() {
-    print(test, "world")
-    test = 12
+    fmt.print(test, "world")
 }
 
 var test = "hello"

@@ -7,7 +7,7 @@ type VariableRef struct {
 }
 
 func (v *VariableRef) Name() string {
-	return v.Identifier.Token.Value
+	return v.Identifier.Name()
 }
 
 func (v *VariableRef) Pos() token.Pos {

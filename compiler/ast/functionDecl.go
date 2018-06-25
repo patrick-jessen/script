@@ -15,7 +15,7 @@ type FunctionDecl struct {
 }
 
 func (f *FunctionDecl) Name() string {
-	return f.Identifier.Token.Value
+	return f.Identifier.Name()
 }
 
 func (f FunctionDecl) String() (out string) {
@@ -36,7 +36,7 @@ func (f *FunctionDecl) Init() {
 
 	if f.Args != nil {
 		for _, t := range f.Args.Types {
-			args = append(args, t.Token.Value)
+			args = append(args, t.Name())
 		}
 	}
 

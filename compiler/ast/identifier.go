@@ -8,16 +8,25 @@ import (
 )
 
 type Identifier struct {
-	Token token.Token
-	Typ   Type
+	Symbol token.Token
+	Module token.Token
+	Typ    Type
+}
+
+func (i *Identifier) Name() (out string) {
+	if i.Module.ID != token.Invalid {
+		out = i.Module.Value + "."
+	}
+	out += i.Symbol.Value
+	return
 }
 
 func (i *Identifier) Pos() token.Pos {
-	return i.Token.Pos
+	return i.Symbol.Pos
 }
 
 func (i Identifier) String() (out string) {
-	out = fmt.Sprintf("[%v", color.Yellow(i.Token.Value))
+	out = fmt.Sprintf("[%v", color.Yellow(i.Name()))
 	if i.Typ.IsResolved {
 		out += fmt.Sprintf(" %v", color.Blue(i.Typ))
 	}

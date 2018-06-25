@@ -5,13 +5,19 @@ import (
 	"path"
 	"strings"
 
+	"github.com/patrick-jessen/script/compiler/ast"
 	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/compiler/token"
 )
 
 type Module struct {
+	dir   string
 	name  string
 	Files []*file.File
+
+	Symbols map[string]ast.Declarable
+	Imports []*ast.Identifier
+	Exports map[string]ast.Declarable
 }
 
 func (m *Module) Error(pos token.Pos, message string) {
@@ -46,7 +52,7 @@ func Load(dir string, name string) *Module {
 		panic(err)
 	}
 
-	mod := &Module{name: name}
+	mod := &Module{name: name, dir: dir}
 
 	fileIdx := 0
 	fileMask := 0
@@ -67,4 +73,8 @@ func Load(dir string, name string) *Module {
 
 func (m *Module) Name() string {
 	return m.name
+}
+
+func (m *Module) Dir() string {
+	return m.dir
 }

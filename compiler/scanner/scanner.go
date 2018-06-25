@@ -114,6 +114,8 @@ startScan:
 		return
 	case ',':
 		tok.ID = token.Comma
+	case '.':
+		tok.ID = token.Dot
 	case '"':
 		str := s.scanString()
 		tok.ID = token.String

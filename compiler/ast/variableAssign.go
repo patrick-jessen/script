@@ -11,6 +11,7 @@ import (
 type VariableAssign struct {
 	Identifier *Identifier
 	Value      Expression
+	EqPos      token.Pos
 }
 
 func (v *VariableAssign) Pos() token.Pos {
@@ -29,8 +30,10 @@ func (v VariableAssign) String() string {
 }
 
 func (v *VariableAssign) TypeCheck(errFn ErrorFunc) {
+	v.Value.TypeCheck(errFn)
+
 	if !v.Identifier.Type().IsCompatible(v.Value.Type()) {
-		errFn(v.Value.Pos(), fmt.Sprintf("cannot assign type %v to %v",
+		errFn(v.EqPos, fmt.Sprintf("cannot assign type %v to %v",
 			v.Value.Type(), v.Identifier.Type()))
 	}
 }
