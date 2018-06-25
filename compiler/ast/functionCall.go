@@ -50,6 +50,10 @@ func (f *FunctionCall) SetType(t Type) {
 	f.Identifier.Typ = t
 }
 func (f *FunctionCall) TypeCheck(errFn ErrorFunc) {
+	if !f.Type().IsResolved {
+		return
+	}
+
 	numArgs := 0
 	if f.Args != nil {
 		f.Args.TypeCheck(errFn)

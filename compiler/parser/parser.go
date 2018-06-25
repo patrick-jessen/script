@@ -58,7 +58,13 @@ func (p *Parser) Resolve(ident *ast.Identifier) {
 		// the symbol belongs to another module.
 		// assert that the particular module is imported.
 		for _, i := range p.ImportedModules {
-			if i.Value == mod {
+			if i.Alias.ID != token.Invalid {
+				if i.Alias.Value == mod {
+					ident.Module.Value = i.Module.Value
+					p.Imports = append(p.Imports, ident)
+					return
+				}
+			} else if i.Module.Value == mod {
 				p.Imports = append(p.Imports, ident)
 				return
 			}
@@ -67,6 +73,11 @@ func (p *Parser) Resolve(ident *ast.Identifier) {
 			"module '%v' not imported", ident.Module.Value,
 		))
 	}
+}
+
+type Import struct {
+	Alias  token.Token
+	Module token.Token
 }
 
 type Parser struct {
@@ -80,7 +91,7 @@ type Parser struct {
 
 	Unresolved      []*ast.Identifier // unresolved module-local symbols
 	Imports         []*ast.Identifier // external symbols
-	ImportedModules []token.Token     // names of imported modules
+	ImportedModules []Import          // names of imported modules
 }
 
 func New(file *file.File) (p *Parser) {
@@ -91,15 +102,20 @@ func New(file *file.File) (p *Parser) {
 	return p
 }
 
-func (p *Parser) importModule(tok token.Token) {
+func (p *Parser) importModule(imp Import) {
 	for _, i := range p.ImportedModules {
-		if i.Value == tok.Value {
-			p.file.Error(tok.Pos, fmt.Sprintf(
-				"duplicate import '%v'", tok.Value,
+		if i.Alias.Value == imp.Alias.Value {
+			p.file.Error(imp.Alias.Pos, fmt.Sprintf(
+				"duplicate import alias '%v'", imp.Alias.Value,
+			))
+		}
+		if i.Module.Value == imp.Module.Value {
+			p.file.Error(imp.Module.Pos, fmt.Sprintf(
+				"duplicate import '%v'", imp.Module.Value,
 			))
 		}
 	}
-	p.ImportedModules = append(p.ImportedModules, tok)
+	p.ImportedModules = append(p.ImportedModules, imp)
 }
 
 func (p *Parser) pushScope() {
@@ -356,21 +372,25 @@ func (p *Parser) parseIdentifier() *ast.Identifier {
 	return ast
 }
 
-func (p *Parser) parseFunctionDeclArgs() *ast.FunctionDeclArgs {
-	ast := &ast.FunctionDeclArgs{}
+func (p *Parser) parseFunctionDeclArgs() []*ast.Identifier {
+	var ret []*ast.Identifier
 
 	for {
 		ident := p.parseIdentifier()
-		typ := p.parseIdentifier()
-		ast.Names = append(ast.Names, ident)
-		ast.Types = append(ast.Types, typ)
+		ident.Typ = ast.Type{
+			IsResolved: true,
+			Return:     p.tok.Value,
+		}
+		p.expect(token.Identifier)
+
+		ret = append(ret, ident)
 
 		if p.tok.ID != token.Comma {
 			break
 		}
 		p.expect(token.Comma)
 	}
-	return ast
+	return ret
 }
 
 func (p *Parser) parseType() ast.Type {
@@ -395,6 +415,9 @@ func (p *Parser) parseFunctionDecl() *ast.FunctionDecl {
 	p.expect(token.ParentEnd)
 
 	p.pushScope()
+	for _, a := range ast.Args {
+		p.Declare(a)
+	}
 	ast.Block = p.parseBlock()
 	p.popScope()
 
@@ -434,11 +457,18 @@ func (p *Parser) parseDeclaration() (n ast.Node) {
 }
 
 func (p *Parser) parseImport() {
+	var alias token.Token
+	var module token.Token
+
 	p.expect(token.Import)
-	modTok := p.tok
+	if p.tok.ID == token.Identifier {
+		alias = p.tok
+		p.expect(token.Identifier)
+	}
+	module = p.tok
 	p.expect(token.String)
 	p.expect(token.NewLine)
-	p.importModule(modTok)
+	p.importModule(Import{alias, module})
 }
 
 func (p *Parser) parseFile() *ast.File {

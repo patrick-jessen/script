@@ -3,15 +3,23 @@ package compiler
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/patrick-jessen/script/compiler/ast"
 	"github.com/patrick-jessen/script/compiler/module"
 	"github.com/patrick-jessen/script/compiler/parser"
 )
 
+type SharedLib struct {
+	Lib     string
+	Symbols []string
+}
+
 type Compiler struct {
 	workDir string
 	modules []*module.Module
+
+	sharedLibs []*SharedLib
 }
 
 func New(dir string) *Compiler {
@@ -38,6 +46,16 @@ func (c *Compiler) importModule(imp string) (err error) {
 		}
 	}()
 
+	if strings.HasSuffix(imp, ".dll") {
+		for _, l := range c.sharedLibs {
+			if l.Lib == imp {
+				return
+			}
+		}
+		c.sharedLibs = append(c.sharedLibs, &SharedLib{Lib: imp})
+		return
+	}
+
 	path := filepath.Join(c.workDir, imp)
 
 	// ignore if module is already imported
@@ -53,6 +71,20 @@ func (c *Compiler) importModule(imp string) (err error) {
 
 func (c *Compiler) Run() {
 	var modMap = map[string]*module.Module{}
+	defer func() {
+		recover()
+		// print
+		for _, mod := range modMap {
+			fmt.Printf("Module '%v' ---------------------\n", mod.Name())
+			for _, sym := range mod.Symbols {
+				fmt.Println(sym)
+			}
+		}
+
+		fmt.Println()
+		fmt.Println()
+		c.printErrors()
+	}()
 
 	// compile modules
 	for i := 0; i < len(c.modules); i++ {
@@ -67,6 +99,18 @@ func (c *Compiler) Run() {
 		for _, i := range m.Imports {
 			modName := i.Module.Value
 			symName := i.Symbol.Value
+
+			if strings.HasSuffix(modName, ".dll") {
+				var sl *SharedLib
+				for _, l := range c.sharedLibs {
+					if l.Lib == modName {
+						sl = l
+						break
+					}
+				}
+				sl.Symbols = append(sl.Symbols, symName)
+				continue
+			}
 
 			mod, ok := modMap[modName]
 			if !ok {
@@ -92,17 +136,9 @@ func (c *Compiler) Run() {
 		}
 	}
 
-	// print
-	for _, mod := range modMap {
-		fmt.Printf("Module '%v' ---------------------\n", mod.Name())
-		for _, sym := range mod.Symbols {
-			fmt.Println(sym)
-		}
+	for _, sl := range c.sharedLibs {
+		fmt.Println(*sl)
 	}
-
-	fmt.Println()
-	fmt.Println()
-	c.printErrors()
 }
 
 func (c *Compiler) compileModule(mod *module.Module) {
@@ -136,9 +172,9 @@ func (c *Compiler) compileModule(mod *module.Module) {
 
 		// perform imports
 		for _, i := range p.ImportedModules {
-			err := c.importModule(i.Value)
+			err := c.importModule(i.Module.Value)
 			if err != nil {
-				mod.Error(i.Pos, err.Error())
+				mod.Error(i.Module.Pos, err.Error())
 			}
 		}
 	}

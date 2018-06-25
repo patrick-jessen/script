@@ -10,7 +10,7 @@ import (
 
 type FunctionDecl struct {
 	Identifier *Identifier
-	Args       *FunctionDeclArgs
+	Args       []*Identifier
 	Block      *Block
 }
 
@@ -33,11 +33,8 @@ func (f FunctionDecl) String() (out string) {
 
 func (f *FunctionDecl) Init() {
 	var args []string
-
-	if f.Args != nil {
-		for _, t := range f.Args.Types {
-			args = append(args, t.Name())
-		}
+	for _, a := range f.Args {
+		args = append(args, a.Type().Return)
 	}
 
 	f.Identifier.Typ = Type{
