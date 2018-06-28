@@ -41,3 +41,7 @@ func (v *VariableDecl) TypeCheck(errFn ErrorFunc) {
 		errFn(v.Value.Pos(), fmt.Sprintf("cannot assign type %v to %v", v.Value.Type(), v.Identifier.Type()))
 	}
 }
+
+func (v *VariableDecl) Ident() *Identifier {
+	return v.Identifier
+}

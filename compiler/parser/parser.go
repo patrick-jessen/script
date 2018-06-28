@@ -47,6 +47,7 @@ func (p *Parser) Resolve(ident *ast.Identifier) {
 			sym, ok := scope.symbols[ident.Symbol.Value]
 			if ok {
 				ident.Typ = sym.Type()
+				ident.Obj = sym.Ident().Obj
 				return
 			}
 			scope = scope.parent
@@ -103,15 +104,20 @@ func New(file *file.File) (p *Parser) {
 }
 
 func (p *Parser) importModule(imp Import) {
+	idTok := imp.Alias
+	if idTok.ID == token.Invalid {
+		idTok = imp.Module
+	}
+
 	for _, i := range p.ImportedModules {
-		if i.Alias.Value == imp.Alias.Value {
-			p.file.Error(imp.Alias.Pos, fmt.Sprintf(
-				"duplicate import alias '%v'", imp.Alias.Value,
-			))
+		t := i.Alias
+		if t.ID == token.Invalid {
+			t = i.Module
 		}
-		if i.Module.Value == imp.Module.Value {
-			p.file.Error(imp.Module.Pos, fmt.Sprintf(
-				"duplicate import '%v'", imp.Module.Value,
+
+		if idTok.Value == t.Value {
+			p.file.Error(idTok.Pos, fmt.Sprintf(
+				"duplicate import '%v'", idTok.Value,
 			))
 		}
 	}
@@ -377,6 +383,7 @@ func (p *Parser) parseFunctionDeclArgs() []*ast.Identifier {
 
 	for {
 		ident := p.parseIdentifier()
+		ident.Obj = &ast.Object{}
 		ident.Typ = ast.Type{
 			IsResolved: true,
 			Return:     p.tok.Value,
@@ -404,10 +411,12 @@ func (p *Parser) parseType() ast.Type {
 }
 
 func (p *Parser) parseFunctionDecl() *ast.FunctionDecl {
+	obj := &ast.Object{}
 	ast := &ast.FunctionDecl{}
 
 	p.expect(token.Func)
 	ast.Identifier = p.parseIdentifier()
+	ast.Identifier.Obj = obj
 	p.expect(token.ParentStart)
 	if p.tok.ID != token.ParentEnd {
 		ast.Args = p.parseFunctionDeclArgs()
@@ -427,10 +436,12 @@ func (p *Parser) parseFunctionDecl() *ast.FunctionDecl {
 	return ast
 }
 func (p *Parser) parseVariableDecl() *ast.VariableDecl {
+	obj := &ast.Object{}
 	ast := &ast.VariableDecl{}
 
 	p.expect(token.Var)
 	ast.Identifier = p.parseIdentifier()
+	ast.Identifier.Obj = obj
 	if p.tok.ID != token.Equal {
 		ast.Identifier.Typ = p.parseType()
 	}

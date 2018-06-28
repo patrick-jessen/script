@@ -21,6 +21,7 @@ type Declarable interface {
 	Node
 	Type() Type
 	Name() string
+	Ident() *Identifier
 }
 
 type Type struct {

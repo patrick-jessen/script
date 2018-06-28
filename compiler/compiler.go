@@ -3,11 +3,14 @@ package compiler
 import (
 	"fmt"
 	"path/filepath"
+	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/patrick-jessen/script/compiler/ast"
 	"github.com/patrick-jessen/script/compiler/module"
 	"github.com/patrick-jessen/script/compiler/parser"
+	"github.com/patrick-jessen/script/vm"
 )
 
 type SharedLib struct {
@@ -20,6 +23,8 @@ type Compiler struct {
 	modules []*module.Module
 
 	sharedLibs []*SharedLib
+
+	pm *vm.ProgManager
 }
 
 func New(dir string) *Compiler {
@@ -72,17 +77,7 @@ func (c *Compiler) importModule(imp string) (err error) {
 func (c *Compiler) Run() {
 	var modMap = map[string]*module.Module{}
 	defer func() {
-		recover()
-		// print
-		for _, mod := range modMap {
-			fmt.Printf("Module '%v' ---------------------\n", mod.Name())
-			for _, sym := range mod.Symbols {
-				fmt.Println(sym)
-			}
-		}
-
-		fmt.Println()
-		fmt.Println()
+		// recover()
 		c.printErrors()
 	}()
 
@@ -136,9 +131,113 @@ func (c *Compiler) Run() {
 		}
 	}
 
-	for _, sl := range c.sharedLibs {
-		fmt.Println(*sl)
+	// for _, sl := range c.sharedLibs {
+	// 	fmt.Println(*sl)
+	// }
+
+	c.generate()
+}
+
+func (c *Compiler) generate() {
+	c.pm = vm.NewPM()
+
+	for _, m := range c.modules {
+		c.generateModule(m)
 	}
+
+	c.pm.AddFunction(&vm.Function{
+		Name: "fmt.print",
+		Instructions: []vm.Instruction{
+			&vm.CallGo{
+				Func: func(vm *vm.VM) int {
+					first := vm.GoString(vm.Get(1))
+					second := vm.GoString(vm.Get(2))
+
+					fmt.Println(first, second)
+					return 0
+				},
+			},
+		},
+	})
+
+	c.pm.Run()
+}
+
+func (c *Compiler) generateExpression(n ast.Expression, reg int) (out []vm.Instruction) {
+
+	switch exp := n.(type) {
+	case *ast.String:
+		l := byte(len(exp.Token.Value))
+		dPos := c.pm.AddBytes([]byte{l})
+		c.pm.AddBytes(([]byte)(exp.Token.Value))
+		out = append(out, &vm.LoadC{Dst: reg, Val: dPos})
+	case *ast.Integer:
+		i, _ := strconv.ParseInt(exp.Token.Value, 10, 32)
+		out = append(out, &vm.LoadC{Dst: reg, Val: int(i)})
+	case *ast.VariableRef:
+		if exp.Identifier.Obj.Num < 0 {
+			out = append(out, &vm.Mov{
+				Dst: reg,
+				Src: -exp.Identifier.Obj.Num,
+			})
+		} else {
+			out = append(out,
+				&vm.Get{Local: exp.Identifier.Obj.Num, Reg: reg})
+		}
+	default:
+		fmt.Println("hue", exp, reflect.TypeOf(exp))
+	}
+	return
+}
+
+func (c *Compiler) generateFunction(n *ast.FunctionDecl, modName string) {
+	fn := &vm.Function{
+		Name: modName + "." + n.Name(),
+	}
+
+	for i, a := range n.Args {
+		a.Obj.Num = -i - 1
+	}
+
+	for _, s := range n.Block.Statements {
+		switch sn := s.(type) {
+		case *ast.VariableDecl:
+			sn.Identifier.Obj.Num = fn.NumLocals
+			fn.NumLocals++
+
+			exp := c.generateExpression(sn.Value, 0)
+
+			fn.Instructions = append(fn.Instructions, exp...)
+			fn.Instructions = append(fn.Instructions,
+				&vm.Set{Local: sn.Identifier.Obj.Num, Reg: 0},
+			)
+
+		case *ast.FunctionCall:
+			for i, a := range sn.Args.Args {
+				exp := c.generateExpression(a, i+1)
+				fn.Instructions = append(fn.Instructions, exp...)
+			}
+
+			fn.Instructions = append(fn.Instructions,
+				&vm.Call{Func: sn.Name()})
+		default:
+			fmt.Println(reflect.TypeOf(s))
+		}
+	}
+
+	c.pm.AddFunction(fn)
+	fmt.Println(fn)
+}
+
+func (c *Compiler) generateModule(m *module.Module) {
+	for _, s := range m.Symbols {
+		switch n := s.(type) {
+		case *ast.FunctionDecl:
+			c.generateFunction(n, m.Name())
+		}
+	}
+
+	// c.pm.Print()
 }
 
 func (c *Compiler) compileModule(mod *module.Module) {
@@ -185,6 +284,7 @@ func (c *Compiler) compileModule(mod *module.Module) {
 		sym, ok := symbols[name]
 		if ok {
 			u.Typ = sym.Type()
+			u.Obj = sym.Ident().Obj
 		} else {
 			mod.Error(u.Pos(), fmt.Sprintf("unresolved symbol '%v'", name))
 		}

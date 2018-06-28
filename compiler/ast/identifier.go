@@ -7,10 +7,15 @@ import (
 	"github.com/patrick-jessen/script/utils/color"
 )
 
+type Object struct {
+	Num int
+}
+
 type Identifier struct {
 	Symbol token.Token
 	Module token.Token
 	Typ    Type
+	Obj    *Object
 }
 
 func (i *Identifier) Name() (out string) {
@@ -38,4 +43,8 @@ func (i *Identifier) Type() Type {
 	return i.Typ
 }
 func (*Identifier) TypeCheck(errFn ErrorFunc) {
+}
+
+func (i *Identifier) Ident() *Identifier {
+	return i
 }

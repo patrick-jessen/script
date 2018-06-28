@@ -1,7 +1,13 @@
 package ast
 
+import "github.com/patrick-jessen/script/compiler/token"
+
 type Block struct {
 	Statements []Node
+}
+
+func (b *Block) Pos() token.Pos {
+	return b.Statements[0].Pos()
 }
 
 func (b *Block) String() (out string) {

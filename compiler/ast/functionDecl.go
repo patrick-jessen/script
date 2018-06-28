@@ -14,6 +14,10 @@ type FunctionDecl struct {
 	Block      *Block
 }
 
+func (f *FunctionDecl) Ident() *Identifier {
+	return f.Identifier
+}
+
 func (f *FunctionDecl) Name() string {
 	return f.Identifier.Name()
 }

@@ -7,4 +7,6 @@ import (
 func main() {
 	comp := compiler.New("./src")
 	comp.Run()
+
+	// vm.Run()
 }

@@ -29,6 +29,10 @@ func (v VariableAssign) String() string {
 	)
 }
 
+func (v *VariableAssign) Name() string {
+	return v.Identifier.Name()
+}
+
 func (v *VariableAssign) TypeCheck(errFn ErrorFunc) {
 	v.Value.TypeCheck(errFn)
 
