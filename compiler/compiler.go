@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
 	"reflect"
@@ -8,23 +9,15 @@ import (
 	"strings"
 
 	"github.com/patrick-jessen/script/compiler/ast"
+	"github.com/patrick-jessen/script/compiler/ir"
 	"github.com/patrick-jessen/script/compiler/module"
 	"github.com/patrick-jessen/script/compiler/parser"
-	"github.com/patrick-jessen/script/vm"
 )
-
-type SharedLib struct {
-	Lib     string
-	Symbols []string
-}
 
 type Compiler struct {
 	workDir string
 	modules []*module.Module
-
-	sharedLibs []*SharedLib
-
-	pm *vm.ProgManager
+	prog    *Program
 }
 
 func New(dir string) *Compiler {
@@ -33,7 +26,17 @@ func New(dir string) *Compiler {
 		modules: []*module.Module{
 			module.Load(dir, "main"),
 		},
+		prog: newProgram(),
 	}
+}
+
+func (c *Compiler) hasErrors() bool {
+	for _, m := range c.modules {
+		if m.HasErrors() {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Compiler) printErrors() {
@@ -52,12 +55,7 @@ func (c *Compiler) importModule(imp string) (err error) {
 	}()
 
 	if strings.HasSuffix(imp, ".dll") {
-		for _, l := range c.sharedLibs {
-			if l.Lib == imp {
-				return
-			}
-		}
-		c.sharedLibs = append(c.sharedLibs, &SharedLib{Lib: imp})
+		c.prog.AddExternalLib(imp)
 		return
 	}
 
@@ -74,12 +72,8 @@ func (c *Compiler) importModule(imp string) (err error) {
 	return
 }
 
-func (c *Compiler) Run() {
+func (c *Compiler) Run() *Program {
 	var modMap = map[string]*module.Module{}
-	defer func() {
-		// recover()
-		c.printErrors()
-	}()
 
 	// compile modules
 	for i := 0; i < len(c.modules); i++ {
@@ -96,14 +90,7 @@ func (c *Compiler) Run() {
 			symName := i.Symbol.Value
 
 			if strings.HasSuffix(modName, ".dll") {
-				var sl *SharedLib
-				for _, l := range c.sharedLibs {
-					if l.Lib == modName {
-						sl = l
-						break
-					}
-				}
-				sl.Symbols = append(sl.Symbols, symName)
+				c.prog.AddExternalSymbol(modName, symName)
 				continue
 			}
 
@@ -124,65 +111,77 @@ func (c *Compiler) Run() {
 		}
 	}
 
-	// perform type check
+	// check types
+	c.performTypeCheck(modMap)
+
+	// print errors (if any)
+	if c.hasErrors() {
+		c.printErrors()
+		return nil
+	}
+
+	// generate IR
+	c.generate()
+
+	return c.prog
+}
+
+func (c *Compiler) performTypeCheck(modMap map[string]*module.Module) {
+	defer func() { recover() }()
+
 	for _, mod := range modMap {
 		for _, sym := range mod.Symbols {
 			sym.TypeCheck(mod.Error)
 		}
 	}
-
-	// for _, sl := range c.sharedLibs {
-	// 	fmt.Println(*sl)
-	// }
-
-	c.generate()
 }
 
 func (c *Compiler) generate() {
-	c.pm = vm.NewPM()
-
 	for _, m := range c.modules {
 		c.generateModule(m)
 	}
 
-	c.pm.AddFunction(&vm.Function{
-		Name: "fmt.print",
-		Instructions: []vm.Instruction{
-			&vm.CallGo{
-				Func: func(vm *vm.VM) int {
-					first := vm.GoString(vm.Get(1))
-					second := vm.GoString(vm.Get(2))
+	// c.pm.AddFunction(&vm.Function{
+	// 	Name: "fmt.print",
+	// 	Instructions: []vm.Instruction{
+	// 		&vm.CallGo{
+	// 			Func: func(vm *vm.VM) int {
+	// 				first := vm.GoString(vm.Get(1))
+	// 				second := vm.GoString(vm.Get(2))
 
-					fmt.Println(first, second)
-					return 0
-				},
-			},
-		},
-	})
-
-	c.pm.Run()
+	// 				fmt.Println(first, second)
+	// 				return 0
+	// 			},
+	// 		},
+	// 	},
+	// })
 }
 
-func (c *Compiler) generateExpression(n ast.Expression, reg int) (out []vm.Instruction) {
+func (c *Compiler) generateExpression(n ast.Expression, reg int) (out []ir.Instruction) {
 
 	switch exp := n.(type) {
 	case *ast.String:
 		l := byte(len(exp.Token.Value))
-		dPos := c.pm.AddBytes([]byte{l})
-		c.pm.AddBytes(([]byte)(exp.Token.Value))
-		out = append(out, &vm.LoadC{Dst: reg, Val: dPos})
+
+		buf := bytes.Buffer{}
+		buf.WriteByte(l)
+		buf.Write(([]byte)(exp.Token.Value))
+		buf.WriteByte(0)
+
+		dPos := c.prog.AddData(buf.Bytes())
+		out = append(out, &ir.LoadD{Reg: ir.Register(reg), Data: dPos})
 	case *ast.Integer:
 		i, _ := strconv.ParseInt(exp.Token.Value, 10, 32)
-		out = append(out, &vm.LoadC{Dst: reg, Val: int(i)})
+		out = append(out, &ir.LoadI{Reg: ir.Register(reg), Val: int(i)})
 	case *ast.VariableRef:
 		if exp.Identifier.Obj.Num < 0 {
-			out = append(out, &vm.Mov{
-				Dst: reg,
-				Src: -exp.Identifier.Obj.Num,
+			out = append(out, &ir.Move{
+				Dst: ir.Register(reg),
+				Src: ir.Register(-exp.Identifier.Obj.Num),
 			})
 		} else {
-			out = append(out,
-				&vm.Get{Local: exp.Identifier.Obj.Num, Reg: reg})
+			fmt.Println("KEK")
+			panic("Not implemented")
 		}
 	default:
 		fmt.Println("hue", exp, reflect.TypeOf(exp))
@@ -191,7 +190,7 @@ func (c *Compiler) generateExpression(n ast.Expression, reg int) (out []vm.Instr
 }
 
 func (c *Compiler) generateFunction(n *ast.FunctionDecl, modName string) {
-	fn := &vm.Function{
+	fn := &ir.Function{
 		Name: modName + "." + n.Name(),
 	}
 
@@ -209,7 +208,10 @@ func (c *Compiler) generateFunction(n *ast.FunctionDecl, modName string) {
 
 			fn.Instructions = append(fn.Instructions, exp...)
 			fn.Instructions = append(fn.Instructions,
-				&vm.Set{Local: sn.Identifier.Obj.Num, Reg: 0},
+				&ir.Set{
+					Var: ir.Local(sn.Identifier.Obj.Num),
+					Reg: ir.Register(0),
+				},
 			)
 
 		case *ast.FunctionCall:
@@ -219,13 +221,15 @@ func (c *Compiler) generateFunction(n *ast.FunctionDecl, modName string) {
 			}
 
 			fn.Instructions = append(fn.Instructions,
-				&vm.Call{Func: sn.Name()})
+				&ir.Call{Func: sn.Name()},
+			)
 		default:
 			fmt.Println(reflect.TypeOf(s))
 		}
 	}
 
-	c.pm.AddFunction(fn)
+	c.prog.AddFunction(fn)
+
 	fmt.Println(fn)
 }
 
@@ -236,8 +240,6 @@ func (c *Compiler) generateModule(m *module.Module) {
 			c.generateFunction(n, m.Name())
 		}
 	}
-
-	// c.pm.Print()
 }
 
 func (c *Compiler) compileModule(mod *module.Module) {
