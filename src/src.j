@@ -1,6 +1,6 @@
 import "fmt"
 
 func main() {
-    var test = "hello"
+    var test = "SomeMessage"
     fmt.print("hello", "world")
 }

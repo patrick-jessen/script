@@ -10,7 +10,7 @@ import (
 	"github.com/patrick-jessen/script/compiler"
 )
 
-func Run(prog *compiler.Program) int {
+func Run(prog *compiler.Program, debug bool) int {
 	vm := newVM(prog)
 	vm.Call("main.main")
 	return vm.regs[0]
