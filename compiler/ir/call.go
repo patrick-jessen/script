@@ -12,7 +12,7 @@ type Call struct {
 }
 
 func (i *Call) String() string {
-	return fmt.Sprintf("%v\t%v", color.Yellow("Call"), color.Red(i.Func))
+	return fmt.Sprintf("%v  %v", color.Yellow("Call"), color.Red(i.Func))
 }
 
 func (i *Call) Execute(vm VM) {

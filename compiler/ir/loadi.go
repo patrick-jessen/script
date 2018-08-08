@@ -13,7 +13,7 @@ type LoadI struct {
 }
 
 func (i *LoadI) String() string {
-	return fmt.Sprintf("%v\t%v\t%v",
+	return fmt.Sprintf("%v %v  %v",
 		color.Yellow("LoadI"), i.Reg, color.Green(i.Val),
 	)
 }

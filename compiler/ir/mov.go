@@ -13,7 +13,7 @@ type Move struct {
 }
 
 func (i *Move) String() string {
-	return fmt.Sprintf("%v\t%v\t%v", color.Yellow("Move"), i.Dst, i.Src)
+	return fmt.Sprintf("%v  %v  %v", color.Yellow("Move"), i.Dst, i.Src)
 }
 
 func (i *Move) Execute(vm VM) {

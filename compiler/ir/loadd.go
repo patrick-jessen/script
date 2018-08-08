@@ -13,7 +13,7 @@ type LoadD struct {
 }
 
 func (i *LoadD) String() string {
-	return fmt.Sprintf("%v\t%v\tdat%v", color.Yellow("LoadD"), i.Reg,
+	return fmt.Sprintf("%v %v  dat%v", color.Yellow("LoadD"), i.Reg,
 		color.Blue(i.Data))
 }
 

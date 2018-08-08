@@ -13,7 +13,7 @@ type Set struct {
 }
 
 func (i *Set) String() string {
-	return fmt.Sprintf("%v\t%v\t%v",
+	return fmt.Sprintf("%v   %v  %v",
 		color.Yellow("Set"), i.Var, i.Reg)
 }
 
