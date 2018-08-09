@@ -1,8 +1,6 @@
 package ir
 
 import (
-	"fmt"
-
 	"github.com/patrick-jessen/script/utils/color"
 )
 
@@ -19,18 +17,18 @@ type VM interface {
 
 type Register int
 
-func (r Register) String() string {
-	return "reg" + color.Red(fmt.Sprintf("%v", int(r)))
+func (r Register) ColorString() color.String {
+	return color.NewString("reg%v", color.Red(r))
 }
 
 type Local int
 
-func (l Local) String() string {
-	return "loc" + color.Blue(fmt.Sprintf("%v", int(l)))
+func (l Local) ColorString() color.String {
+	return color.NewString("loc%v", color.Blue(l))
 }
 
 type Instruction interface {
-	String() string
+	ColorString() color.String
 	Execute(VM)
 }
 
@@ -40,16 +38,16 @@ type Function struct {
 	Instructions []Instruction
 }
 
-func (f *Function) String() (out string) {
-	out = fmt.Sprintf("%v %v", color.Blue("func"), color.Red(f.Name))
+func (f *Function) ColorString() color.String {
+	// out = fmt.Sprintf("%v %v", color.Blue("func"), color.Red(f.Name))
 
-	if f.NumLocals > 0 {
-		out += fmt.Sprintf(" (%v locals)", f.NumLocals)
-	}
-	out += "\n"
+	// if f.NumLocals > 0 {
+	// 	out += fmt.Sprintf(" (%v locals)", f.NumLocals)
+	// }
+	// out += "\n"
 
-	for i := 0; i < len(f.Instructions); i++ {
-		out += "  " + f.Instructions[i].String() + "\n"
-	}
-	return
+	// for i := 0; i < len(f.Instructions); i++ {
+	// 	out += "  " + f.Instructions[i].String() + "\n"
+	// }
+	return color.NewString("")
 }

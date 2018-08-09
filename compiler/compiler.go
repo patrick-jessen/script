@@ -140,21 +140,6 @@ func (c *Compiler) generate() {
 	for _, m := range c.modules {
 		c.generateModule(m)
 	}
-
-	// c.pm.AddFunction(&vm.Function{
-	// 	Name: "fmt.print",
-	// 	Instructions: []vm.Instruction{
-	// 		&vm.CallGo{
-	// 			Func: func(vm *vm.VM) int {
-	// 				first := vm.GoString(vm.Get(1))
-	// 				second := vm.GoString(vm.Get(2))
-
-	// 				fmt.Println(first, second)
-	// 				return 0
-	// 			},
-	// 		},
-	// 	},
-	// })
 }
 
 func (c *Compiler) generateExpression(n ast.Expression, reg int) (out []ir.Instruction) {
@@ -229,8 +214,6 @@ func (c *Compiler) generateFunction(n *ast.FunctionDecl, modName string) {
 	}
 
 	c.prog.AddFunction(fn)
-
-	fmt.Println(fn)
 }
 
 func (c *Compiler) generateModule(m *module.Module) {

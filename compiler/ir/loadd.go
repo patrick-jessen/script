@@ -1,8 +1,6 @@
 package ir
 
 import (
-	"fmt"
-
 	"github.com/patrick-jessen/script/utils/color"
 )
 
@@ -12,9 +10,8 @@ type LoadD struct {
 	Data int
 }
 
-func (i *LoadD) String() string {
-	return fmt.Sprintf("%v %v  dat%v", color.Yellow("LoadD"), i.Reg,
-		color.Blue(i.Data))
+func (i *LoadD) ColorString() color.String {
+	return color.NewString("%v %v  dat%v", color.Yellow("LoadD"), i.Reg.ColorString(), color.Blue(i.Data))
 }
 
 func (i *LoadD) Execute(vm VM) {

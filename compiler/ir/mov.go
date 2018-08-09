@@ -1,8 +1,6 @@
 package ir
 
 import (
-	"fmt"
-
 	"github.com/patrick-jessen/script/utils/color"
 )
 
@@ -12,8 +10,8 @@ type Move struct {
 	Dst Register
 }
 
-func (i *Move) String() string {
-	return fmt.Sprintf("%v  %v  %v", color.Yellow("Move"), i.Dst, i.Src)
+func (i *Move) ColorString() color.String {
+	return color.NewString("%v  %v  %v", color.Yellow("Move"), i.Dst.ColorString(), i.Src.ColorString())
 }
 
 func (i *Move) Execute(vm VM) {

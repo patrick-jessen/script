@@ -2,10 +2,8 @@ package compiler
 
 import (
 	"crypto/md5"
-	"fmt"
 
 	"github.com/patrick-jessen/script/compiler/ir"
-	"github.com/patrick-jessen/script/utils/color"
 )
 
 type Program struct {
@@ -47,30 +45,30 @@ func (p *Program) AddData(d []byte) (out int) {
 }
 
 func (p *Program) String() (out string) {
-	out += fmt.Sprintf("Functions:  %v\t[", len(p.Functions))
-	first := true
-	for _, f := range p.Functions {
-		if !first {
-			out += ", "
-		} else {
-			first = false
-		}
-		out += color.Red(f.Name)
-	}
-	out += "]\n"
-	out += fmt.Sprintf("DataItems:  %v\t(%v bytes)\n", len(p.DataCache), len(p.Data))
-	out += fmt.Sprintf("SharedLibs: %v\t[", len(p.SharedLibs))
+	// out += fmt.Sprintf("Functions:  %v\t[", len(p.Functions))
+	// first := true
+	// for _, f := range p.Functions {
+	// 	if !first {
+	// 		out += ", "
+	// 	} else {
+	// 		first = false
+	// 	}
+	// 	out += color.Red(f.Name)
+	// }
+	// out += "]\n"
+	// out += fmt.Sprintf("DataItems:  %v\t(%v bytes)\n", len(p.DataCache), len(p.Data))
+	// out += fmt.Sprintf("SharedLibs: %v\t[", len(p.SharedLibs))
 
-	first = true
-	for k := range p.SharedLibs {
-		if !first {
-			out += ", "
-		} else {
-			first = false
-		}
-		out += color.Yellow(k)
-	}
-	out += "]"
+	// first = true
+	// for k := range p.SharedLibs {
+	// 	if !first {
+	// 		out += ", "
+	// 	} else {
+	// 		first = false
+	// 	}
+	// 	out += color.Yellow(k)
+	// }
+	// out += "]"
 
-	return
+	return ""
 }

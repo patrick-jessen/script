@@ -1,8 +1,6 @@
 package ir
 
 import (
-	"fmt"
-
 	"github.com/patrick-jessen/script/utils/color"
 )
 
@@ -12,9 +10,9 @@ type Set struct {
 	Reg Register
 }
 
-func (i *Set) String() string {
-	return fmt.Sprintf("%v   %v  %v",
-		color.Yellow("Set"), i.Var, i.Reg)
+func (i *Set) ColorString() color.String {
+	return color.NewString("%v   %v  %v",
+		color.Yellow("Set"), i.Var.ColorString(), i.Reg.ColorString())
 }
 
 func (i *Set) Execute(vm VM) {

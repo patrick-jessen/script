@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"syscall"
-	"unicode/utf8"
 	"unsafe"
 
 	"github.com/patrick-jessen/script/compiler/ir"
@@ -56,44 +55,97 @@ func newVM(prog *compiler.Program, debug bool) *vm {
 
 func (vm *vm) printDebug(fn *ir.Function, inst int) {
 
-	var instText string
-	var regsText string
+	var instLines []color.String
+	var regsLines []color.String
 
-	instText += "HERE-----\n"
-	instText += fmt.Sprintf("%v %v\n", color.Blue("func"), color.Red(fn.Name))
+	instLines = append(instLines, color.White("== Instructions ============================================"))
+	instLines = append(instLines, color.NewString("%v %v", color.Blue("func"), color.Red(fn.Name)))
+
 	for idx, i := range fn.Instructions {
+		str := color.NewString("")
+
 		if idx == inst {
-			instText += "> "
+			str.Add(color.White("> "))
 		} else {
-			instText += "  "
+			str.Add(color.White("  "))
 		}
-		instText += i.String() + "\n"
+		str.Add(i.ColorString())
+		instLines = append(instLines, str)
 	}
 
-	for i, v := range vm.regs {
-		regsText += fmt.Sprintf("reg%v  %v\n", i, v)
+	regsLines = append(regsLines, color.White("== Registers ================="))
+
+	for i := 0; i < 8; i++ {
+		regsLines = append(regsLines, color.NewString(
+			"reg%v  %v", color.Red(i), color.White(vm.regs[i]),
+		))
 	}
 
-	instSplit := strings.Split(instText, "\n")
-	regsSplit := strings.Split(regsText, "\n")
-
-	max := len(instSplit)
-	if len(regsSplit) > max {
-		max = len(regsSplit)
+	max := len(instLines)
+	if len(regsLines) > max {
+		max = len(regsLines)
 	}
 
 	for i := 0; i < max; i++ {
 		column := 0
-		if i < len(instSplit) {
-			fmt.Print(instSplit[i])
-			column = utf8.RuneCountInString(instSplit[i])
+		fmt.Print("| ")
+
+		if len(instLines) > i {
+			fmt.Print(instLines[i])
+			column = instLines[i].Length()
 		}
-		if i < len(regsSplit) {
-			fmt.Print(strings.Repeat(" ", 60-column))
-			fmt.Print(regsSplit[i])
+		fmt.Print(strings.Repeat(" ", 60-column))
+		fmt.Print(" | ")
+
+		if len(regsLines) > i {
+			fmt.Print(regsLines[i])
+			column = regsLines[i].Length()
 		}
+		fmt.Print(strings.Repeat(" ", 30-column))
+		fmt.Print(" | ")
 		fmt.Println()
 	}
+
+	return
+
+	// var instText string
+	// var regsText string
+
+	// instText += "HERE-----\n"
+	// instText += fmt.Sprintf("%v %v\n", color.Blue("func"), color.Red(fn.Name))
+	// for idx, i := range fn.Instructions {
+	// 	if idx == inst {
+	// 		instText += "> "
+	// 	} else {
+	// 		instText += "  "
+	// 	}
+	// 	instText += i.String() + "\n"
+	// }
+
+	// for i, v := range vm.regs {
+	// 	regsText += fmt.Sprintf("reg%v  %v\n", i, v)
+	// }
+
+	// instSplit := strings.Split(instText, "\n")
+	// regsSplit := strings.Split(regsText, "\n")
+
+	// max := len(instSplit)
+	// if len(regsSplit) > max {
+	// 	max = len(regsSplit)
+	// }
+
+	// for i := 0; i < max; i++ {
+	// 	column := 0
+	// 	if i < len(instSplit) {
+	// 		fmt.Print(instSplit[i])
+	// 		column = utf8.RuneCountInString(strings.TrimSpace(instSplit[i]))
+	// 	}
+	// 	if i < len(regsSplit) {
+	// 		fmt.Print(strings.Repeat(" ", 60-column))
+	// 		fmt.Print(regsSplit[i])
+	// 	}
+	// 	fmt.Println()
+	// }
 }
 
 func (vm *vm) Call(fnName string) {
@@ -111,6 +163,7 @@ func (vm *vm) Call(fnName string) {
 
 	for i := 0; i < len(fn.Instructions); i++ {
 		if vm.debug {
+			fmt.Println(strings.Repeat("\n", 10))
 			vm.printDebug(fn, i)
 			reader := bufio.NewReader(os.Stdin)
 			reader.ReadBytes('\n')
@@ -142,8 +195,6 @@ func (vm *vm) callC(fnName string) {
 	if !ok {
 		panic(fmt.Sprintf("missing function '%v'", fnName))
 	}
-
-	fmt.Println(vm.regs)
 
 	ret, _, err := syscall.Syscall6(fn, 4,
 		uintptr(vm.regs[1]), uintptr(vm.regs[0]),

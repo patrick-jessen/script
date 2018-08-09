@@ -1,8 +1,6 @@
 package ir
 
 import (
-	"fmt"
-
 	"github.com/patrick-jessen/script/utils/color"
 )
 
@@ -11,8 +9,8 @@ type Call struct {
 	Func string
 }
 
-func (i *Call) String() string {
-	return fmt.Sprintf("%v  %v", color.Yellow("Call"), color.Red(i.Func))
+func (i *Call) ColorString() color.String {
+	return color.NewString("%v  %v", color.Yellow("Call"), color.Red(i.Func))
 }
 
 func (i *Call) Execute(vm VM) {
