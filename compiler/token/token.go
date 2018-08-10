@@ -1,8 +1,6 @@
 package token
 
 import (
-	"fmt"
-
 	"github.com/patrick-jessen/script/utils/color"
 )
 
@@ -31,10 +29,7 @@ func (t Token) Name() string {
 
 // String returns a pretty formatting of the token
 func (t Token) String() string {
-	if len(t.Value) > 0 {
-		return color.NewString("[%v %v]", color.Yellow(t.Value), color.Green(t.ID)).String()
-	}
-	return fmt.Sprintf("[%v]", color.Green(t.ID))
+	return color.NewString("%v %v", color.Green(t.ID), color.Yellow(t.Value)).String()
 }
 
 var names = map[ID]string{

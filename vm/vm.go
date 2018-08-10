@@ -197,8 +197,8 @@ func (vm *vm) callC(fnName string) {
 	}
 
 	ret, _, err := syscall.Syscall6(fn, 4,
-		uintptr(vm.regs[1]), uintptr(vm.regs[0]),
-		uintptr(vm.regs[0]), uintptr(vm.regs[4]),
+		uintptr(vm.regs[1]), uintptr(vm.regs[2]),
+		uintptr(vm.regs[3]), uintptr(vm.regs[4]),
 		0, 0)
 
 	if err != 0 {

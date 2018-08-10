@@ -1,8 +1,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/patrick-jessen/script/compiler/token"
 	"github.com/patrick-jessen/script/utils/color"
 )
@@ -31,12 +29,10 @@ func (i *Identifier) Pos() token.Pos {
 }
 
 func (i Identifier) String() (out string) {
-	out = fmt.Sprintf("[%v", color.Yellow(i.Name()))
 	if i.Typ.IsResolved {
-		out += fmt.Sprintf(" %v", color.Blue(i.Typ))
+		return color.NewString("%v %v", color.Blue(i.Typ), color.Yellow(i.Name())).String()
 	}
-	out += "]"
-	return
+	return color.Yellow(i.Name()).String()
 }
 
 func (i *Identifier) Type() Type {

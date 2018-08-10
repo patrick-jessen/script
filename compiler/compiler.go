@@ -9,9 +9,11 @@ import (
 	"strings"
 
 	"github.com/patrick-jessen/script/compiler/ast"
+	"github.com/patrick-jessen/script/compiler/config"
 	"github.com/patrick-jessen/script/compiler/ir"
 	"github.com/patrick-jessen/script/compiler/module"
 	"github.com/patrick-jessen/script/compiler/parser"
+	"github.com/patrick-jessen/script/utils/color"
 )
 
 type Compiler struct {
@@ -114,6 +116,15 @@ func (c *Compiler) Run() *Program {
 	// check types
 	c.performTypeCheck(modMap)
 
+	if config.DebugAST {
+		for k, v := range modMap {
+			fmt.Println(color.NewString("\nAST for module [%v]:", color.Red(k)))
+			for _, sym := range v.Symbols {
+				fmt.Println(sym)
+			}
+		}
+	}
+
 	// print errors (if any)
 	if c.hasErrors() {
 		c.printErrors()
@@ -200,8 +211,12 @@ func (c *Compiler) generateFunction(n *ast.FunctionDecl, modName string) {
 			)
 
 		case *ast.FunctionCall:
-			for i, a := range sn.Args.Args {
-				exp := c.generateExpression(a, i+1)
+			// for i, a := range sn.Args.Args {
+			// 	exp := c.generateExpression(a, i+1)
+			// 	fn.Instructions = append(fn.Instructions, exp...)
+			// }
+			for i := len(sn.Args.Args) - 1; i >= 0; i-- {
+				exp := c.generateExpression(sn.Args.Args[i], i+1)
 				fn.Instructions = append(fn.Instructions, exp...)
 			}
 

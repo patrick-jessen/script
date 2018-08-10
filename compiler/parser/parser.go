@@ -4,9 +4,11 @@ import (
 	"fmt"
 
 	"github.com/patrick-jessen/script/compiler/ast"
+	"github.com/patrick-jessen/script/compiler/config"
 	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/compiler/scanner"
 	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/utils/color"
 )
 
 func (p *Parser) Symbols() map[string]ast.Declarable {
@@ -136,6 +138,10 @@ func (p *Parser) next() {
 		panic("EOF reached")
 	}
 	p.tok = p.scanner.Scan()
+
+	if config.DebugTokens {
+		fmt.Println(p.file.PosInfo(p.tok.Pos).Link(), "\t", p.tok)
+	}
 }
 
 func (p *Parser) expect(id token.ID) {
@@ -507,6 +513,10 @@ func (p *Parser) parseFile() *ast.File {
 }
 
 func (p *Parser) Run() ast.Node {
+	if config.DebugTokens {
+		fmt.Println(color.NewString("\nTokens for [%v]:", color.Red(p.file.Path)).String())
+	}
+
 	p.tok = token.Token{}
 	p.curScope = p.rootScope
 	p.scanner.Init(p.file)

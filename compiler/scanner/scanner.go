@@ -1,3 +1,4 @@
+// Package scanner is responsible for tokenizing source files
 package scanner
 
 import (
@@ -18,8 +19,10 @@ func (s *Scanner) Init(file *file.File) {
 	s.file = file
 	s.iter = 0
 	if len(file.Source) > 0 {
+		// point to first character
 		s.char = file.Source[0]
 	} else {
+		// insert newline at the end of file
 		s.char = '\n'
 	}
 }
@@ -30,7 +33,7 @@ func (s *Scanner) next() bool {
 	s.iter++
 
 	if s.iter < len(s.file.Source) {
-		// set current character
+		// advance to next character
 		s.char = s.file.Source[s.iter]
 
 		// mark newlines - this is done to help the file resolve token positions
@@ -48,7 +51,8 @@ func (s *Scanner) next() bool {
 // Scan scans the next token.
 func (s *Scanner) Scan() (tok token.Token) {
 startScan:
-	if s.iter >= len(s.file.Source)+1 {
+	// If EOF is reached, return 'EOF' token
+	if s.iter > len(s.file.Source) {
 		return token.Token{
 			ID:  token.EOF,
 			Pos: s.file.Pos(len(s.file.Source)),
@@ -61,6 +65,7 @@ startScan:
 		i := s.scanIdentifer()
 		k := keywordLookUp(i)
 		if k != token.Invalid {
+			// Token is a keyword
 			tok.ID = k
 		} else {
 			tok.ID = token.Identifier
