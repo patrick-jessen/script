@@ -3,21 +3,19 @@ package file
 import (
 	"fmt"
 
-	"github.com/patrick-jessen/script/compiler/token"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 // fileError describes an error within a file
 type fileError struct {
-	File     *File     // the file in which the error occured
-	Position token.Pos // the position of the error
-	Message  string    // the error message
+	Position Pos    // the position of the error
+	Message  string // the error message
 }
 
 // Error makes fileError implement error interface
 func (se *fileError) Error() string {
 	// get info regarding the error position
-	posInfo := se.File.PosInfo(se.Position)
+	posInfo := se.Position.Info()
 
 	return fmt.Sprintf(
 		"%v\t%v\n%v",

@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type Add struct {
 	LHS   Expression
 	RHS   Expression
-	OpPos token.Pos
+	OpPos file.Pos
 }
 
-func (a *Add) Pos() token.Pos {
+func (a *Add) Pos() file.Pos {
 	return a.LHS.Pos()
 }
 
@@ -33,13 +33,13 @@ func (a Add) String() string {
 		strings.Replace(rhs, "\n", "\n  ", -1),
 	)
 }
-func (a *Add) TypeCheck(errFn ErrorFunc) {
+func (a *Add) TypeCheck() {
 	lhsTyp := a.LHS.Type()
 	rhsTyp := a.RHS.Type()
 
 	if lhsTyp.IsResolved && rhsTyp.IsResolved {
 		if lhsTyp.Return != rhsTyp.Return {
-			errFn(a.OpPos, fmt.Sprintf("cannot add types %v and %v", lhsTyp, rhsTyp))
+			a.OpPos.MakeError(fmt.Sprintf("cannot add types %v and %v", lhsTyp, rhsTyp))
 		}
 	}
 }

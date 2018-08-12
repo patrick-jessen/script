@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/patrick-jessen/script/compiler/token"
+import "github.com/patrick-jessen/script/compiler/file"
 
 type VariableRef struct {
 	Identifier *Identifier
@@ -10,7 +10,7 @@ func (v *VariableRef) Name() string {
 	return v.Identifier.Name()
 }
 
-func (v *VariableRef) Pos() token.Pos {
+func (v *VariableRef) Pos() file.Pos {
 	return v.Identifier.Pos()
 }
 
@@ -25,5 +25,5 @@ func (v *VariableRef) SetType(t Type) {
 	v.Identifier.Typ = t
 }
 
-func (v *VariableRef) TypeCheck(errFn ErrorFunc) {
+func (v *VariableRef) TypeCheck() {
 }

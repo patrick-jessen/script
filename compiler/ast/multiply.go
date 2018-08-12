@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type Multiply struct {
 	LHS   Expression
 	RHS   Expression
-	OpPos token.Pos
+	OpPos file.Pos
 }
 
-func (m *Multiply) Pos() token.Pos {
+func (m *Multiply) Pos() file.Pos {
 	return m.LHS.Pos()
 }
 func (m *Multiply) Type() Type {
@@ -33,11 +33,11 @@ func (m Multiply) String() string {
 	)
 }
 
-func (m *Multiply) TypeCheck(errFn ErrorFunc) {
+func (m *Multiply) TypeCheck() {
 	lhsTyp := m.LHS.Type()
 	rhsTyp := m.RHS.Type()
 
 	if lhsTyp.Return != rhsTyp.Return {
-		errFn(m.RHS.Pos(), fmt.Sprintf("cannot multiply types %v and %v", lhsTyp, rhsTyp))
+		m.RHS.Pos().MakeError(fmt.Sprintf("cannot multiply types %v and %v", lhsTyp, rhsTyp))
 	}
 }

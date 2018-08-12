@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type VariableAssign struct {
 	Identifier *Identifier
 	Value      Expression
-	EqPos      token.Pos
+	EqPos      file.Pos
 }
 
-func (v *VariableAssign) Pos() token.Pos {
+func (v *VariableAssign) Pos() file.Pos {
 	return v.Identifier.Pos()
 }
 
@@ -33,11 +33,11 @@ func (v *VariableAssign) Name() string {
 	return v.Identifier.Name()
 }
 
-func (v *VariableAssign) TypeCheck(errFn ErrorFunc) {
-	v.Value.TypeCheck(errFn)
+func (v *VariableAssign) TypeCheck() {
+	v.Value.TypeCheck()
 
 	if !v.Identifier.Type().IsCompatible(v.Value.Type()) {
-		errFn(v.EqPos, fmt.Sprintf("cannot assign type %v to %v",
+		v.EqPos.MakeError(fmt.Sprintf("cannot assign type %v to %v",
 			v.Value.Type(), v.Identifier.Type()))
 	}
 }

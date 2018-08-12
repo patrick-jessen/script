@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type Divide struct {
 	LHS   Expression
 	RHS   Expression
-	OpPos token.Pos
+	OpPos file.Pos
 }
 
-func (d *Divide) Pos() token.Pos {
+func (d *Divide) Pos() file.Pos {
 	return d.LHS.Pos()
 }
 
@@ -33,5 +33,5 @@ func (d Divide) String() string {
 		strings.Replace(rhs, "\n", "\n  ", -1),
 	)
 }
-func (*Divide) TypeCheck(errFn ErrorFunc) {
+func (*Divide) TypeCheck() {
 }

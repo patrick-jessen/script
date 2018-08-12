@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
@@ -53,9 +53,9 @@ func (f *FunctionDecl) Type() Type {
 	return f.Identifier.Type()
 }
 
-func (f *FunctionDecl) Pos() token.Pos {
+func (f *FunctionDecl) Pos() file.Pos {
 	return f.Identifier.Pos()
 }
-func (f *FunctionDecl) TypeCheck(errFn ErrorFunc) {
-	f.Block.TypeCheck(errFn)
+func (f *FunctionDecl) TypeCheck() {
+	f.Block.TypeCheck()
 }

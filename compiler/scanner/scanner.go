@@ -131,7 +131,7 @@ startScan:
 	case '\n':
 		tok.ID = token.NewLine
 	default:
-		s.file.Error(token.Pos(s.iter), "unexpected token")
+		s.file.Pos(s.iter).MakeError("unexpected token")
 		s.next()
 		goto startScan
 	}
@@ -177,8 +177,7 @@ func (s *Scanner) scanString() string {
 	s.next()
 	for s.char != '"' {
 		if !s.next() {
-			s.file.Error(s.file.Pos(s.iter),
-				"expected \"")
+			s.file.Pos(s.iter).MakeError("expected \"")
 			break
 		}
 	}

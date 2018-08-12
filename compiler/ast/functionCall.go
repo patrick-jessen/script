@@ -4,21 +4,21 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type FunctionCall struct {
 	Identifier    *Identifier
 	Args          *FunctionCallArgs
-	LastParentPos token.Pos
+	LastParentPos file.Pos
 }
 
 func (f *FunctionCall) Name() string {
 	return f.Identifier.Name()
 }
 
-func (f *FunctionCall) Pos() token.Pos {
+func (f *FunctionCall) Pos() file.Pos {
 	return f.Identifier.Pos()
 }
 
@@ -49,19 +49,19 @@ func (f *FunctionCall) Type() Type {
 func (f *FunctionCall) SetType(t Type) {
 	f.Identifier.Typ = t
 }
-func (f *FunctionCall) TypeCheck(errFn ErrorFunc) {
+func (f *FunctionCall) TypeCheck() {
 	if !f.Type().IsResolved {
 		return
 	}
 
 	numArgs := 0
 	if f.Args != nil {
-		f.Args.TypeCheck(errFn)
+		f.Args.TypeCheck()
 		numArgs = len(f.Args.Args)
 	}
 
 	if numArgs != len(f.Type().Args) {
-		errFn(f.LastParentPos, fmt.Sprintf(
+		f.LastParentPos.MakeError(fmt.Sprintf(
 			"incorrect number of arguments. Expected %v, got %v",
 			len(f.Type().Args), numArgs,
 		))
@@ -73,7 +73,7 @@ func (f *FunctionCall) TypeCheck(errFn ErrorFunc) {
 
 		r := f.Args.Args[i].Type().Return
 		if r != a {
-			errFn(f.Args.Args[i].Pos(), fmt.Sprintf(
+			f.Args.Args[i].Pos().MakeError(fmt.Sprintf(
 				"expected %v, got %v", a, r,
 			))
 		}

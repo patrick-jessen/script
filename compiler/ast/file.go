@@ -3,14 +3,14 @@ package ast
 import (
 	"fmt"
 
-	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/compiler/file"
 )
 
 type File struct {
 	Declarations []Node
 }
 
-func (m *File) Pos() token.Pos {
+func (m *File) Pos() file.Pos {
 	return m.Declarations[0].Pos()
 }
 
@@ -20,5 +20,5 @@ func (m File) String() (out string) {
 	}
 	return
 }
-func (*File) TypeCheck(errFn ErrorFunc) {
+func (*File) TypeCheck() {
 }

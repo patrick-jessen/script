@@ -1,15 +1,13 @@
 package ast
 
 import (
-	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/compiler/file"
 )
 
-type ErrorFunc func(token.Pos, string)
-
 type Node interface {
-	Pos() token.Pos
+	Pos() file.Pos
 	String() string
-	TypeCheck(ErrorFunc)
+	TypeCheck()
 }
 
 type Expression interface {

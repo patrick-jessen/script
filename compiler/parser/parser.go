@@ -31,9 +31,9 @@ func (p *Parser) Declare(d ast.Declarable) {
 	name := d.Name()
 	sym, ok := p.curScope.symbols[name]
 	if ok {
-		p.file.Error(d.Pos(), fmt.Sprintf(
+		d.Pos().MakeError(fmt.Sprintf(
 			"redeclaration of symbol '%v'. First declared here: (%v)",
-			name, p.file.PosInfo(sym.Pos()).Link(),
+			name, sym.Pos().Info().Link(),
 		))
 		return
 	}
@@ -72,7 +72,7 @@ func (p *Parser) Resolve(ident *ast.Identifier) {
 				return
 			}
 		}
-		p.file.Error(ident.Module.Pos, fmt.Sprintf(
+		ident.Module.Pos.MakeError(fmt.Sprintf(
 			"module '%v' not imported", ident.Module.Value,
 		))
 	}
@@ -118,7 +118,7 @@ func (p *Parser) importModule(imp Import) {
 		}
 
 		if idTok.Value == t.Value {
-			p.file.Error(idTok.Pos, fmt.Sprintf(
+			idTok.Pos.MakeError(fmt.Sprintf(
 				"duplicate import '%v'", idTok.Value,
 			))
 		}
@@ -140,20 +140,20 @@ func (p *Parser) next() {
 	p.tok = p.scanner.Scan()
 
 	if config.DebugTokens {
-		fmt.Println(p.file.PosInfo(p.tok.Pos).Link(), "\t", p.tok)
+		fmt.Println(p.tok.Pos.Info().Link(), "\t", p.tok)
 	}
 }
 
 func (p *Parser) expect(id token.ID) {
 	if p.tok.ID != id {
-		p.file.Error(p.tok.Pos, fmt.Sprintf("expected %v", id.String()))
+		p.tok.Pos.MakeError(fmt.Sprintf("expected %v", id.String()))
 	} else {
 		p.next()
 	}
 }
 
 func (p *Parser) Debug() {
-	fmt.Println(p.file.PosInfo(p.tok.Pos).String())
+	fmt.Println(p.tok.Pos.Info().String())
 }
 
 func (p *Parser) parseFunctionCallArgs() *ast.FunctionCallArgs {
@@ -210,7 +210,7 @@ func (p *Parser) parseStatement() (n ast.Node) {
 			n = p.parseVariableAssign(ident)
 		}
 	default:
-		p.file.Error(p.tok.Pos, "expected statement")
+		p.tok.Pos.MakeError("expected statement")
 		p.next()
 		return nil
 	}
@@ -262,7 +262,7 @@ loop:
 			val = p.parseExpression()
 			p.expect(token.ParentEnd)
 		default:
-			p.file.Error(p.tok.Pos, "expected expression")
+			p.tok.Pos.MakeError("expected expression")
 			p.next()
 			return nil
 		}
@@ -465,7 +465,7 @@ func (p *Parser) parseDeclaration() (n ast.Node) {
 	case token.Var:
 		n = p.parseVariableDecl()
 	default:
-		p.file.Error(p.tok.Pos, "expected declaration")
+		p.tok.Pos.MakeError("expected declaration")
 		p.next()
 		return nil
 	}

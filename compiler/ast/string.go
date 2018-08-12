@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/compiler/token"
 )
 
@@ -12,7 +13,7 @@ func (s *String) String() string {
 	return s.Token.String()
 }
 
-func (s *String) Pos() token.Pos {
+func (s *String) Pos() file.Pos {
 	return s.Token.Pos
 }
 
@@ -22,5 +23,5 @@ func (s *String) Type() Type {
 		Return:     "string",
 	}
 }
-func (*String) TypeCheck(errFn ErrorFunc) {
+func (*String) TypeCheck() {
 }

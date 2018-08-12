@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/compiler/token"
 	"github.com/patrick-jessen/script/utils/color"
 )
@@ -24,7 +25,7 @@ func (i *Identifier) Name() (out string) {
 	return
 }
 
-func (i *Identifier) Pos() token.Pos {
+func (i *Identifier) Pos() file.Pos {
 	return i.Symbol.Pos
 }
 
@@ -38,7 +39,7 @@ func (i Identifier) String() (out string) {
 func (i *Identifier) Type() Type {
 	return i.Typ
 }
-func (*Identifier) TypeCheck(errFn ErrorFunc) {
+func (*Identifier) TypeCheck() {
 }
 
 func (i *Identifier) Ident() *Identifier {

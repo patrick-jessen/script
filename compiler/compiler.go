@@ -105,7 +105,7 @@ func (c *Compiler) Run() *Program {
 			if ok {
 				i.Typ = sym.Type()
 			} else {
-				m.Error(i.Pos(), fmt.Sprintf(
+				i.Pos().MakeError(fmt.Sprintf(
 					"module '%v' does not export symbol '%v'",
 					modName, symName,
 				))
@@ -142,7 +142,7 @@ func (c *Compiler) performTypeCheck(modMap map[string]*module.Module) {
 
 	for _, mod := range modMap {
 		for _, sym := range mod.Symbols {
-			sym.TypeCheck(mod.Error)
+			sym.TypeCheck()
 		}
 	}
 }
@@ -254,9 +254,9 @@ func (c *Compiler) compileModule(mod *module.Module) {
 		for k, v := range p.Symbols() {
 			// detect duplicate declarations
 			if sym, ok := symbols[k]; ok {
-				mod.Error(v.Pos(), fmt.Sprintf(
+				v.Pos().MakeError(fmt.Sprintf(
 					"redeclaration of symbol '%v'. First declared here: (%v)",
-					k, mod.PosInfo(sym.Pos()).Link(),
+					k, sym.Pos().Info().Link(),
 				))
 			} else {
 				symbols[k] = v
@@ -273,7 +273,7 @@ func (c *Compiler) compileModule(mod *module.Module) {
 		for _, i := range p.ImportedModules {
 			err := c.importModule(i.Module.Value)
 			if err != nil {
-				mod.Error(i.Module.Pos, err.Error())
+				i.Module.Pos.MakeError(err.Error())
 			}
 		}
 	}
@@ -286,7 +286,7 @@ func (c *Compiler) compileModule(mod *module.Module) {
 			u.Typ = sym.Type()
 			u.Obj = sym.Ident().Obj
 		} else {
-			mod.Error(u.Pos(), fmt.Sprintf("unresolved symbol '%v'", name))
+			u.Pos().MakeError(fmt.Sprintf("unresolved symbol '%v'", name))
 		}
 	}
 

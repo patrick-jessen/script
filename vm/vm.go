@@ -57,6 +57,8 @@ func (vm *vm) printDebug(fn *ir.Function, inst int) {
 
 	var instLines []color.String
 	var regsLines []color.String
+	var stackLines []color.String
+	var dataLines []color.String
 
 	instLines = append(instLines, color.White("== Instructions ============================================"))
 	instLines = append(instLines, color.NewString("%v %v", color.Blue("func"), color.Red(fn.Name)))
@@ -81,9 +83,33 @@ func (vm *vm) printDebug(fn *ir.Function, inst int) {
 		))
 	}
 
+	stackLines = append(stackLines, color.White("== Stack ====================="))
+	for i := 0; i < fn.NumLocals; i++ {
+		stackLines = append(stackLines, color.NewString(
+			"loc%v  %v", color.Blue(i), color.White(vm.stack[i]),
+		))
+	}
+
+	dataLines = append(dataLines, color.White("== Data ==================="))
+	numDataLines := int(float32(len(vm.prog.Data))/8 + 0.5)
+	for i := 0; i < numDataLines; i++ {
+		line := color.String{}
+		for ii := 0; ii < 8; ii++ {
+			line.Add(color.White(""))
+		}
+
+		dataLines = append(dataLines, color.White("test"))
+	}
+
 	max := len(instLines)
 	if len(regsLines) > max {
 		max = len(regsLines)
+	}
+	if len(stackLines) > max {
+		max = len(stackLines)
+	}
+	if len(dataLines) > max {
+		max = len(dataLines)
 	}
 
 	for i := 0; i < max; i++ {
@@ -100,52 +126,32 @@ func (vm *vm) printDebug(fn *ir.Function, inst int) {
 		if len(regsLines) > i {
 			fmt.Print(regsLines[i])
 			column = regsLines[i].Length()
+		} else {
+			column = 0
 		}
+
 		fmt.Print(strings.Repeat(" ", 30-column))
 		fmt.Print(" | ")
-		fmt.Println()
+
+		if len(stackLines) > i {
+			fmt.Print(stackLines[i])
+			column = stackLines[i].Length()
+		} else {
+			column = 0
+		}
+
+		fmt.Print(strings.Repeat(" ", 30-column))
+		fmt.Print(" | ")
+
+		if len(dataLines) > i {
+			fmt.Print(dataLines[i])
+			column = dataLines[i].Length()
+		} else {
+			column = 0
+		}
+		fmt.Print(strings.Repeat(" ", 30-column))
+		fmt.Println(" |")
 	}
-
-	return
-
-	// var instText string
-	// var regsText string
-
-	// instText += "HERE-----\n"
-	// instText += fmt.Sprintf("%v %v\n", color.Blue("func"), color.Red(fn.Name))
-	// for idx, i := range fn.Instructions {
-	// 	if idx == inst {
-	// 		instText += "> "
-	// 	} else {
-	// 		instText += "  "
-	// 	}
-	// 	instText += i.String() + "\n"
-	// }
-
-	// for i, v := range vm.regs {
-	// 	regsText += fmt.Sprintf("reg%v  %v\n", i, v)
-	// }
-
-	// instSplit := strings.Split(instText, "\n")
-	// regsSplit := strings.Split(regsText, "\n")
-
-	// max := len(instSplit)
-	// if len(regsSplit) > max {
-	// 	max = len(regsSplit)
-	// }
-
-	// for i := 0; i < max; i++ {
-	// 	column := 0
-	// 	if i < len(instSplit) {
-	// 		fmt.Print(instSplit[i])
-	// 		column = utf8.RuneCountInString(strings.TrimSpace(instSplit[i]))
-	// 	}
-	// 	if i < len(regsSplit) {
-	// 		fmt.Print(strings.Repeat(" ", 60-column))
-	// 		fmt.Print(regsSplit[i])
-	// 	}
-	// 	fmt.Println()
-	// }
 }
 
 func (vm *vm) Call(fnName string) {

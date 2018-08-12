@@ -1,12 +1,12 @@
 package ast
 
-import "github.com/patrick-jessen/script/compiler/token"
+import "github.com/patrick-jessen/script/compiler/file"
 
 type Block struct {
 	Statements []Node
 }
 
-func (b *Block) Pos() token.Pos {
+func (b *Block) Pos() file.Pos {
 	return b.Statements[0].Pos()
 }
 
@@ -16,8 +16,8 @@ func (b *Block) String() (out string) {
 	}
 	return
 }
-func (b *Block) TypeCheck(errFn ErrorFunc) {
+func (b *Block) TypeCheck() {
 	for _, s := range b.Statements {
-		s.TypeCheck(errFn)
+		s.TypeCheck()
 	}
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
@@ -19,7 +19,7 @@ func (v *VariableDecl) Name() string {
 func (v *VariableDecl) Type() Type {
 	return v.Value.Type()
 }
-func (v *VariableDecl) Pos() token.Pos {
+func (v *VariableDecl) Pos() file.Pos {
 	return v.Identifier.Pos()
 }
 
@@ -34,11 +34,11 @@ func (v *VariableDecl) String() string {
 	)
 }
 
-func (v *VariableDecl) TypeCheck(errFn ErrorFunc) {
-	v.Value.TypeCheck(errFn)
+func (v *VariableDecl) TypeCheck() {
+	v.Value.TypeCheck()
 
 	if !v.Identifier.Type().IsCompatible(v.Value.Type()) {
-		errFn(v.Value.Pos(), fmt.Sprintf("cannot assign type %v to %v", v.Value.Type(), v.Identifier.Type()))
+		v.Value.Pos().MakeError(fmt.Sprintf("cannot assign type %v to %v", v.Value.Type(), v.Identifier.Type()))
 	}
 }
 

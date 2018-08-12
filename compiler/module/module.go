@@ -7,7 +7,6 @@ import (
 
 	"github.com/patrick-jessen/script/compiler/ast"
 	"github.com/patrick-jessen/script/compiler/file"
-	"github.com/patrick-jessen/script/compiler/token"
 )
 
 type Module struct {
@@ -18,16 +17,6 @@ type Module struct {
 	Symbols map[string]ast.Declarable
 	Imports []*ast.Identifier
 	Exports map[string]ast.Declarable
-}
-
-func (m *Module) Error(pos token.Pos, message string) {
-	fileIdx := (int(pos) & 0xFF000000) >> 24
-	m.Files[fileIdx].Error(pos, message)
-}
-
-func (m *Module) PosInfo(pos token.Pos) file.PosInfo {
-	fileIdx := (int(pos) & 0xFF000000) >> 24
-	return m.Files[fileIdx].PosInfo(pos)
 }
 
 func (m *Module) HasErrors() bool {
@@ -54,18 +43,11 @@ func Load(dir string, name string) *Module {
 
 	mod := &Module{name: name, dir: dir}
 
-	fileIdx := 0
-	fileMask := 0
-
 	// load all *.j files
 	for _, f := range files {
 		if strings.HasSuffix(f.Name(), ".j") {
-			file := file.Load(token.Pos(fileMask), path.Join(dir, f.Name()))
+			file := file.Load(path.Join(dir, f.Name()))
 			mod.Files = append(mod.Files, file)
-
-			// update offset and mask
-			fileIdx++
-			fileMask = fileIdx << 24
 		}
 	}
 	return mod

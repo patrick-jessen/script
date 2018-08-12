@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
 type Subtract struct {
 	LHS   Expression
 	RHS   Expression
-	OpPos token.Pos
+	OpPos file.Pos
 }
 
-func (s *Subtract) Pos() token.Pos {
+func (s *Subtract) Pos() file.Pos {
 	return s.LHS.Pos()
 }
 func (s *Subtract) Type() Type {
@@ -32,5 +32,5 @@ func (s Subtract) String() string {
 		strings.Replace(rhs, "\n", "\n  ", -1),
 	)
 }
-func (*Subtract) TypeCheck(errFn ErrorFunc) {
+func (*Subtract) TypeCheck() {
 }

@@ -1,12 +1,15 @@
 package ast
 
-import "github.com/patrick-jessen/script/compiler/token"
+import (
+	"github.com/patrick-jessen/script/compiler/file"
+	"github.com/patrick-jessen/script/compiler/token"
+)
 
 type Integer struct {
 	Token token.Token
 }
 
-func (i *Integer) Pos() token.Pos {
+func (i *Integer) Pos() file.Pos {
 	return i.Token.Pos
 }
 
@@ -20,5 +23,5 @@ func (i *Integer) Type() Type {
 		Return:     "int",
 	}
 }
-func (*Integer) TypeCheck(errFn ErrorFunc) {
+func (*Integer) TypeCheck() {
 }
