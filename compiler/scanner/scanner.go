@@ -13,7 +13,7 @@ type Scanner struct {
 	char byte       // current character
 }
 
-// Init initializes the scanner
+// Init initializes/resets the scanner
 // Must be called before use
 func (s *Scanner) Init(file *file.File) {
 	s.file = file

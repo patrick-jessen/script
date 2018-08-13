@@ -6,14 +6,14 @@ import (
 	"github.com/patrick-jessen/script/utils/color"
 )
 
-// fileError describes an error within a file
-type fileError struct {
+// Error describes an error within a file
+type Error struct {
 	Position Pos    // the position of the error
 	Message  string // the error message
 }
 
-// Error makes fileError implement error interface
-func (se *fileError) Error() string {
+// Error implements the error interface
+func (se *Error) Error() string {
 	// get info regarding the error position
 	posInfo := se.Position.Info()
 

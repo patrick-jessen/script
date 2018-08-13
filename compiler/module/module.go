@@ -1,6 +1,7 @@
 package module
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path"
 	"strings"
@@ -30,7 +31,9 @@ func (m *Module) HasErrors() bool {
 
 func (m *Module) PrintErrors() {
 	for _, f := range m.Files {
-		f.PrintErrors()
+		for _, e := range f.Errors {
+			fmt.Println(e)
+		}
 	}
 }
 

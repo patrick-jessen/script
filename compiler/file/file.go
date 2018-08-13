@@ -1,16 +1,15 @@
 package file
 
 import (
-	"fmt"
 	"io/ioutil"
 )
 
 // File represents a single source file
 type File struct {
-	Path    string  // path to the file
-	Source  string  // source of the file
-	errors  []error // list of reported errors
-	linePos []int   // positions of lines
+	Path    string   // path to the file
+	Source  string   // source of the file
+	Errors  []*Error // list of reported errors
+	linePos []int    // positions of lines
 }
 
 // Load loads a source file from disk
@@ -38,12 +37,5 @@ func (f *File) Pos(p int) Pos {
 
 // HasErrors returns whether the file contains errors.
 func (f *File) HasErrors() bool {
-	return len(f.errors) > 0
-}
-
-// PrintErrors prints file errors to the console.
-func (f *File) PrintErrors() {
-	for _, e := range f.errors {
-		fmt.Println(e)
-	}
+	return len(f.Errors) > 0
 }

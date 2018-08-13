@@ -59,7 +59,7 @@ func (p Pos) Info() PosInfo {
 
 // MakeError creates a new error at this position
 func (p Pos) MakeError(message string) {
-	p.file.errors = append(p.file.errors, &fileError{
+	p.file.Errors = append(p.file.Errors, &Error{
 		Position: p,
 		Message:  message,
 	})
