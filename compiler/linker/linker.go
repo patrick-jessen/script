@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/patrick-jessen/script/compiler"
-	pe "github.com/patrick-jessen/script/linker/PE"
+	"github.com/patrick-jessen/script/compiler/generator"
+	pe "github.com/patrick-jessen/script/compiler/linker/PE"
 )
 
-func Run(prog *compiler.Program) {
+func Run(prog *generator.Program) {
 	fmt.Println("LINKING ==================================")
 	start := time.Now()
 

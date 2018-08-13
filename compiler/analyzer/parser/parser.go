@@ -4,9 +4,11 @@ package parser
 import (
 	"fmt"
 
-	"github.com/patrick-jessen/script/analyzer/scanner"
-	"github.com/patrick-jessen/script/compiler/ast"
+	"github.com/patrick-jessen/script/compiler/analyzer/ast"
+	"github.com/patrick-jessen/script/compiler/analyzer/scanner"
+
 	"github.com/patrick-jessen/script/config"
+
 	"github.com/patrick-jessen/script/utils/color"
 	"github.com/patrick-jessen/script/utils/file"
 	"github.com/patrick-jessen/script/utils/token"

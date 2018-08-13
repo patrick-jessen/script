@@ -8,12 +8,12 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/patrick-jessen/script/compiler"
-	"github.com/patrick-jessen/script/compiler/ir"
+	"github.com/patrick-jessen/script/compiler/generator"
+	"github.com/patrick-jessen/script/compiler/generator/ir"
 	"github.com/patrick-jessen/script/utils/color"
 )
 
-func Run(prog *compiler.Program, debug bool) int {
+func Run(prog *generator.Program, debug bool) int {
 	vm := newVM(prog, debug)
 	vm.Call("main.main")
 	return vm.regs[0]
@@ -23,11 +23,11 @@ type vm struct {
 	debug  bool
 	stack  []int
 	regs   [8]int
-	prog   *compiler.Program
+	prog   *generator.Program
 	extern map[string]uintptr
 }
 
-func newVM(prog *compiler.Program, debug bool) *vm {
+func newVM(prog *generator.Program, debug bool) *vm {
 	vm := &vm{
 		prog:   prog,
 		extern: make(map[string]uintptr),

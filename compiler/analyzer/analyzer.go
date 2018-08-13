@@ -5,9 +5,11 @@ import (
 	"path"
 	"strings"
 
-	"github.com/patrick-jessen/script/analyzer/parser"
-	"github.com/patrick-jessen/script/compiler/ast"
+	"github.com/patrick-jessen/script/compiler/analyzer/ast"
+	"github.com/patrick-jessen/script/compiler/analyzer/parser"
+
 	"github.com/patrick-jessen/script/config"
+
 	"github.com/patrick-jessen/script/utils/color"
 	"github.com/patrick-jessen/script/utils/module"
 )

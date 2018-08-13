@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/ast"
+	"github.com/patrick-jessen/script/compiler/analyzer/ast"
 	"github.com/patrick-jessen/script/utils/file"
 )
 
