@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/patrick-jessen/script/compiler/ast"
-	"github.com/patrick-jessen/script/compiler/file"
+	"github.com/patrick-jessen/script/utils/file"
 )
 
 type Module struct {

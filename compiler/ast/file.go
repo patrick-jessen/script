@@ -3,7 +3,7 @@ package ast
 import (
 	"fmt"
 
-	"github.com/patrick-jessen/script/compiler/file"
+	"github.com/patrick-jessen/script/utils/file"
 )
 
 type File struct {

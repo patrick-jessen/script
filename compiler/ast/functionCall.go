@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/utils/color"
+	"github.com/patrick-jessen/script/utils/file"
 )
 
 type FunctionCall struct {
@@ -61,7 +61,7 @@ func (f *FunctionCall) TypeCheck() {
 	}
 
 	if numArgs != len(f.Type().Args) {
-		f.LastParentPos.MakeError(fmt.Sprintf(
+		f.LastParentPos.MarkError(fmt.Sprintf(
 			"incorrect number of arguments. Expected %v, got %v",
 			len(f.Type().Args), numArgs,
 		))
@@ -73,7 +73,7 @@ func (f *FunctionCall) TypeCheck() {
 
 		r := f.Args.Args[i].Type().Return
 		if r != a {
-			f.Args.Args[i].Pos().MakeError(fmt.Sprintf(
+			f.Args.Args[i].Pos().MarkError(fmt.Sprintf(
 				"expected %v, got %v", a, r,
 			))
 		}

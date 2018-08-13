@@ -1,9 +1,9 @@
-// Package scanner is responsible for tokenizing source files
+// Package scanner is responsible for performing lexical analysis on source code
 package scanner
 
 import (
-	"github.com/patrick-jessen/script/compiler/file"
-	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/utils/file"
+	"github.com/patrick-jessen/script/utils/token"
 )
 
 // Scanner is used for tokenizing a source file
@@ -55,11 +55,12 @@ startScan:
 	if s.iter > len(s.file.Source) {
 		return token.Token{
 			ID:  token.EOF,
-			Pos: s.file.Pos(len(s.file.Source)),
+			Pos: s.file.NewPos(len(s.file.Source)),
 		}
 	}
 
-	tok.Pos = s.file.Pos(s.iter)
+	// Set position of token
+	tok.Pos = s.file.NewPos(s.iter)
 
 	if isLetter(s.char) {
 		i := s.scanIdentifer()
@@ -131,7 +132,7 @@ startScan:
 	case '\n':
 		tok.ID = token.NewLine
 	default:
-		s.file.Pos(s.iter).MakeError("unexpected token")
+		s.file.NewPos(s.iter).MarkError("unexpected token")
 		s.next()
 		goto startScan
 	}
@@ -177,7 +178,7 @@ func (s *Scanner) scanString() string {
 	s.next()
 	for s.char != '"' {
 		if !s.next() {
-			s.file.Pos(s.iter).MakeError("expected \"")
+			s.file.NewPos(s.iter).MarkError("expected \"")
 			break
 		}
 	}

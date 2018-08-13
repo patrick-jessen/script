@@ -1,15 +1,57 @@
+// Package parser is responsible for performing syntactical analysis on a token stream
 package parser
 
 import (
 	"fmt"
 
+	"github.com/patrick-jessen/script/analyzer/scanner"
 	"github.com/patrick-jessen/script/compiler/ast"
-	"github.com/patrick-jessen/script/compiler/config"
-	"github.com/patrick-jessen/script/compiler/file"
-	"github.com/patrick-jessen/script/compiler/scanner"
-	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/config"
 	"github.com/patrick-jessen/script/utils/color"
+	"github.com/patrick-jessen/script/utils/file"
+	"github.com/patrick-jessen/script/utils/token"
 )
+
+// Parser is used for generating AST
+type Parser struct {
+	file    *file.File      // the file being parsed
+	scanner scanner.Scanner // scanner which is used for obtaining tokens
+	tok     token.Token     // the current token
+
+	rootScope *Scope // top level scope
+	curScope  *Scope // current scope
+
+	Unresolved      []*ast.Identifier // unresolved module-local symbols
+	Imports         []*ast.Identifier // external symbols
+	ImportedModules []Import          // names of imported modules
+
+	Tokens []token.Token // contains tokens if config.DebugTokens == true
+}
+
+// New creates a new parser
+func New(file *file.File) (p *Parser) {
+	rootScope := NewScope(nil)
+	p = &Parser{
+		file:      file,
+		rootScope: rootScope,
+		curScope:  rootScope,
+	}
+	p.scanner.Init(file)
+	p.next()
+	return p
+}
+
+// Run runs the parser and returns the AST
+func (p *Parser) Run() (ret ast.Node) {
+	ret = p.parseFile()
+	if config.DebugTokens {
+		fmt.Println(color.NewString("tokens for [%v]:", color.Red(p.file.Path)))
+		for _, t := range p.Tokens {
+			fmt.Printf("%v\t%v\n", t.Pos.Info().Link(), t)
+		}
+	}
+	return
+}
 
 func (p *Parser) Symbols() map[string]ast.Declarable {
 	return p.rootScope.symbols
@@ -31,10 +73,9 @@ func (p *Parser) Declare(d ast.Declarable) {
 	name := d.Name()
 	sym, ok := p.curScope.symbols[name]
 	if ok {
-		d.Pos().MakeError(fmt.Sprintf(
-			"redeclaration of symbol '%v'. First declared here: (%v)",
+		d.Pos().MarkError("redeclaration of symbol '%v'. First declared here: (%v)",
 			name, sym.Pos().Info().Link(),
-		))
+		)
 		return
 	}
 	p.curScope.symbols[name] = d
@@ -72,37 +113,13 @@ func (p *Parser) Resolve(ident *ast.Identifier) {
 				return
 			}
 		}
-		ident.Module.Pos.MakeError(fmt.Sprintf(
-			"module '%v' not imported", ident.Module.Value,
-		))
+		ident.Module.Pos.MarkError("module '%v' not imported", ident.Module.Value)
 	}
 }
 
 type Import struct {
 	Alias  token.Token
 	Module token.Token
-}
-
-type Parser struct {
-	file *file.File
-
-	scanner scanner.Scanner
-	tok     token.Token
-
-	rootScope *Scope
-	curScope  *Scope
-
-	Unresolved      []*ast.Identifier // unresolved module-local symbols
-	Imports         []*ast.Identifier // external symbols
-	ImportedModules []Import          // names of imported modules
-}
-
-func New(file *file.File) (p *Parser) {
-	p = &Parser{
-		file:      file,
-		rootScope: NewScope(nil),
-	}
-	return p
 }
 
 func (p *Parser) importModule(imp Import) {
@@ -118,9 +135,7 @@ func (p *Parser) importModule(imp Import) {
 		}
 
 		if idTok.Value == t.Value {
-			idTok.Pos.MakeError(fmt.Sprintf(
-				"duplicate import '%v'", idTok.Value,
-			))
+			idTok.Pos.MarkError("duplicate import '%v'", idTok.Value)
 		}
 	}
 	p.ImportedModules = append(p.ImportedModules, imp)
@@ -140,20 +155,16 @@ func (p *Parser) next() {
 	p.tok = p.scanner.Scan()
 
 	if config.DebugTokens {
-		fmt.Println(p.tok.Pos.Info().Link(), "\t", p.tok)
+		p.Tokens = append(p.Tokens, p.tok)
 	}
 }
 
 func (p *Parser) expect(id token.ID) {
 	if p.tok.ID != id {
-		p.tok.Pos.MakeError(fmt.Sprintf("expected %v", id.String()))
+		p.tok.Pos.MarkError("expected %v", id.String())
 	} else {
 		p.next()
 	}
-}
-
-func (p *Parser) Debug() {
-	fmt.Println(p.tok.Pos.Info().String())
 }
 
 func (p *Parser) parseFunctionCallArgs() *ast.FunctionCallArgs {
@@ -210,7 +221,7 @@ func (p *Parser) parseStatement() (n ast.Node) {
 			n = p.parseVariableAssign(ident)
 		}
 	default:
-		p.tok.Pos.MakeError("expected statement")
+		p.tok.Pos.MarkError("expected statement")
 		p.next()
 		return nil
 	}
@@ -262,7 +273,7 @@ loop:
 			val = p.parseExpression()
 			p.expect(token.ParentEnd)
 		default:
-			p.tok.Pos.MakeError("expected expression")
+			p.tok.Pos.MarkError("expected expression")
 			p.next()
 			return nil
 		}
@@ -465,7 +476,7 @@ func (p *Parser) parseDeclaration() (n ast.Node) {
 	case token.Var:
 		n = p.parseVariableDecl()
 	default:
-		p.tok.Pos.MakeError("expected declaration")
+		p.tok.Pos.MarkError("expected declaration")
 		p.next()
 		return nil
 	}
@@ -510,23 +521,4 @@ func (p *Parser) parseFile() *ast.File {
 	}
 
 	return ast
-}
-
-func (p *Parser) Run() ast.Node {
-	if config.DebugTokens {
-		fmt.Println(color.NewString("\nTokens for [%v]:", color.Red(p.file.Path)).String())
-	}
-
-	p.tok = token.Token{}
-	p.curScope = p.rootScope
-	p.scanner.Init(p.file)
-	p.next()
-
-	defer func() {
-		if e := recover(); e != nil {
-			fmt.Println(e)
-			// panic(e)
-		}
-	}()
-	return p.parseFile()
 }

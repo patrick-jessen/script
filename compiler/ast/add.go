@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/utils/color"
+	"github.com/patrick-jessen/script/utils/file"
 )
 
 type Add struct {
@@ -39,7 +39,7 @@ func (a *Add) TypeCheck() {
 
 	if lhsTyp.IsResolved && rhsTyp.IsResolved {
 		if lhsTyp.Return != rhsTyp.Return {
-			a.OpPos.MakeError(fmt.Sprintf("cannot add types %v and %v", lhsTyp, rhsTyp))
+			a.OpPos.MarkError(fmt.Sprintf("cannot add types %v and %v", lhsTyp, rhsTyp))
 		}
 	}
 }

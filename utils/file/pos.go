@@ -33,10 +33,10 @@ func (p Pos) Info() PosInfo {
 
 	if nextLinePos == 0 {
 		// the next line has not been marked yet
-		// crop line from source until EOF
+		// crop line from source until EOS
 		line = p.file.Source[linePos:]
 
-		// crop line at next '\n' (may not be present if EOF)
+		// crop line at next '\n' (may not be present if EOS)
 		if nl := strings.Index(line, "\n"); nl != -1 {
 			line = line[:nl]
 		}
@@ -50,24 +50,24 @@ func (p Pos) Info() PosInfo {
 	colNo = p.index - linePos + 1
 
 	return PosInfo{
-		File:     p.file.Path,
+		Path:     p.file.Path,
 		LineNo:   lineNo,
 		ColumnNo: colNo,
 		Line:     line,
 	}
 }
 
-// MakeError creates a new error at this position
-func (p Pos) MakeError(message string) {
+// MarkError creates a new error at this position
+func (p Pos) MarkError(format string, a ...interface{}) {
 	p.file.Errors = append(p.file.Errors, &Error{
 		Position: p,
-		Message:  message,
+		Message:  fmt.Sprintf(format, a...),
 	})
 }
 
 // PosInfo holds information regarding a position
 type PosInfo struct {
-	File     string // path to the file of the position
+	Path     string // path of the source of the position
 	LineNo   int    // line of the position
 	ColumnNo int    // column of the position
 	Line     string // the line which contains the position
@@ -77,7 +77,7 @@ type PosInfo struct {
 // This allows for printing followable links to the console.
 // Example output: src/main.j:2:11
 func (p PosInfo) Link() string {
-	return fmt.Sprintf("%v:%v:%v", p.File, p.LineNo, p.ColumnNo)
+	return fmt.Sprintf("%v:%v:%v", p.Path, p.LineNo, p.ColumnNo)
 }
 
 // String returns the line of the position, with an arrow which points

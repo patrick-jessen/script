@@ -8,10 +8,9 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/patrick-jessen/script/compiler"
 	"github.com/patrick-jessen/script/compiler/ir"
 	"github.com/patrick-jessen/script/utils/color"
-
-	"github.com/patrick-jessen/script/compiler"
 )
 
 func Run(prog *compiler.Program, debug bool) int {

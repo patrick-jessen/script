@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/utils/color"
+	"github.com/patrick-jessen/script/utils/file"
 )
 
 type VariableAssign struct {
@@ -37,7 +37,7 @@ func (v *VariableAssign) TypeCheck() {
 	v.Value.TypeCheck()
 
 	if !v.Identifier.Type().IsCompatible(v.Value.Type()) {
-		v.EqPos.MakeError(fmt.Sprintf("cannot assign type %v to %v",
+		v.EqPos.MarkError(fmt.Sprintf("cannot assign type %v to %v",
 			v.Value.Type(), v.Identifier.Type()))
 	}
 }

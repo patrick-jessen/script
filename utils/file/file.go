@@ -6,7 +6,7 @@ import (
 
 // File represents a single source file
 type File struct {
-	Path    string   // path to the file
+	Path    string   // path of the file
 	Source  string   // source of the file
 	Errors  []*Error // list of reported errors
 	linePos []int    // positions of lines
@@ -24,14 +24,18 @@ func Load(path string) *File {
 	}
 }
 
+func (f *File) Contents() string {
+	return f.Source
+}
+
 // MarkLine marks the beginning of a new line.
 // p should be the index of a '\n' character.
 func (f *File) MarkLine(p int) {
 	f.linePos = append(f.linePos, p+1)
 }
 
-// Pos creates a Pos from an index into the file
-func (f *File) Pos(p int) Pos {
+// NewPos creates a Pos from an index into the file
+func (f *File) NewPos(p int) Pos {
 	return Pos{file: f, index: p}
 }
 

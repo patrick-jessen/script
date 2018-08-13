@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/patrick-jessen/script/compiler/file"
+import "github.com/patrick-jessen/script/utils/file"
 
 type VariableRef struct {
 	Identifier *Identifier

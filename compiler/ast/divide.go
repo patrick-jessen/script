@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/file"
+	"github.com/patrick-jessen/script/utils/file"
 	"github.com/patrick-jessen/script/utils/color"
 )
 

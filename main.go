@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/patrick-jessen/script/compiler"
-	"github.com/patrick-jessen/script/linker"
+	"github.com/patrick-jessen/script/analyzer"
 	"github.com/patrick-jessen/script/utils/color"
-	"github.com/patrick-jessen/script/vm"
 )
 
 type command int
@@ -74,15 +72,15 @@ func main() {
 		return
 	}
 
-	comp := compiler.New(dir)
-	prog := comp.Run()
+	analyzer := analyzer.New(dir)
+	analyzer.Run()
 
-	switch cmd {
-	case cmdRun:
-		vm.Run(prog, false)
-	case cmdDebug:
-		vm.Run(prog, true)
-	case cmdBuild:
-		linker.Run(prog)
-	}
+	// switch cmd {
+	// case cmdRun:
+	// 	vm.Run(prog, false)
+	// case cmdDebug:
+	// 	vm.Run(prog, true)
+	// case cmdBuild:
+	// 	linker.Run(prog)
+	// }
 }

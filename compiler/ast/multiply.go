@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/utils/color"
+	"github.com/patrick-jessen/script/utils/file"
 )
 
 type Multiply struct {
@@ -38,6 +38,6 @@ func (m *Multiply) TypeCheck() {
 	rhsTyp := m.RHS.Type()
 
 	if lhsTyp.Return != rhsTyp.Return {
-		m.RHS.Pos().MakeError(fmt.Sprintf("cannot multiply types %v and %v", lhsTyp, rhsTyp))
+		m.RHS.Pos().MarkError(fmt.Sprintf("cannot multiply types %v and %v", lhsTyp, rhsTyp))
 	}
 }

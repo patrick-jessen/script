@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/file"
 	"github.com/patrick-jessen/script/utils/color"
+	"github.com/patrick-jessen/script/utils/file"
 )
 
 type VariableDecl struct {
@@ -38,7 +38,7 @@ func (v *VariableDecl) TypeCheck() {
 	v.Value.TypeCheck()
 
 	if !v.Identifier.Type().IsCompatible(v.Value.Type()) {
-		v.Value.Pos().MakeError(fmt.Sprintf("cannot assign type %v to %v", v.Value.Type(), v.Identifier.Type()))
+		v.Value.Pos().MarkError(fmt.Sprintf("cannot assign type %v to %v", v.Value.Type(), v.Identifier.Type()))
 	}
 }
 

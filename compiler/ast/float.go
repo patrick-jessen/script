@@ -1,8 +1,8 @@
 package ast
 
 import (
-	"github.com/patrick-jessen/script/compiler/file"
-	"github.com/patrick-jessen/script/compiler/token"
+	"github.com/patrick-jessen/script/utils/file"
+	"github.com/patrick-jessen/script/utils/token"
 )
 
 type Float struct {
