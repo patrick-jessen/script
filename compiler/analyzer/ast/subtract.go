@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/utils/file"
 	"github.com/patrick-jessen/script/utils/color"
+	"github.com/patrick-jessen/script/utils/file"
 )
 
 type Subtract struct {
@@ -21,7 +21,7 @@ func (s *Subtract) Type() Type {
 	return s.LHS.Type()
 }
 
-func (s Subtract) String() string {
+func (s Subtract) String(level int) string {
 	lhs := fmt.Sprintf("  %v", s.LHS)
 	rhs := fmt.Sprintf("  %v", s.RHS)
 

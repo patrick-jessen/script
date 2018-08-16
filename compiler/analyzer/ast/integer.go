@@ -13,7 +13,7 @@ func (i *Integer) Pos() file.Pos {
 	return i.Token.Pos
 }
 
-func (i *Integer) String() string {
+func (i *Integer) String(level int) string {
 	return i.Token.String()
 }
 

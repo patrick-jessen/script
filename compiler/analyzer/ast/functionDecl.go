@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/utils/file"
 	"github.com/patrick-jessen/script/utils/color"
+	"github.com/patrick-jessen/script/utils/file"
 )
 
 type FunctionDecl struct {
@@ -22,15 +22,17 @@ func (f *FunctionDecl) Name() string {
 	return f.Identifier.Name()
 }
 
-func (f FunctionDecl) String() (out string) {
-	out = fmt.Sprintf(
-		"%v %v",
+func (f FunctionDecl) String(level int) (out string) {
+	out = f.Identifier.Pos().Info().Link()
+	out += strings.Repeat("  ", level)
+
+	out += fmt.Sprintf("%v %v\n",
 		color.Red("FunctionDecl"),
-		f.Identifier,
+		f.Identifier.String(0),
 	)
+
 	if len(f.Block.Statements) > 0 {
-		block := fmt.Sprintf("  %v", f.Block)
-		out += "\n" + strings.Replace(block, "\n", "\n  ", -1)
+		out += f.Block.String(level + 1)
 	}
 	return
 }

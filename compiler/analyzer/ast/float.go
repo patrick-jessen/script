@@ -20,7 +20,7 @@ func (f *Float) Type() Type {
 	}
 }
 
-func (f *Float) String() string {
+func (f *Float) String(level int) string {
 	return f.Token.String()
 }
 func (*Float) TypeCheck() {

@@ -1,10 +1,12 @@
 package ast
 
-import "github.com/patrick-jessen/script/utils/file"
+import (
+	"github.com/patrick-jessen/script/utils/file"
+)
 
 type Node interface {
 	Pos() file.Pos
-	String() string
+	String(int) string
 	TypeCheck()
 }
 

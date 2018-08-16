@@ -21,7 +21,7 @@ func (m *Multiply) Type() Type {
 	return m.LHS.Type()
 }
 
-func (m Multiply) String() string {
+func (m Multiply) String(level int) string {
 	lhs := fmt.Sprintf("  %v", m.LHS)
 	rhs := fmt.Sprintf("  %v", m.RHS)
 

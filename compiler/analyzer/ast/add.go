@@ -22,7 +22,7 @@ func (a *Add) Type() Type {
 	return a.LHS.Type()
 }
 
-func (a Add) String() string {
+func (a Add) String(level int) string {
 	lhs := fmt.Sprintf("  %v", a.LHS)
 	rhs := fmt.Sprintf("  %v", a.RHS)
 

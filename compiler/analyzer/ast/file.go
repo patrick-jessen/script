@@ -1,8 +1,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/patrick-jessen/script/utils/file"
 )
 
@@ -14,11 +12,12 @@ func (m *File) Pos() file.Pos {
 	return m.Declarations[0].Pos()
 }
 
-func (m File) String() (out string) {
+func (m File) String(level int) (out string) {
 	for _, s := range m.Declarations {
-		out += fmt.Sprintf("%v\n", s)
+		out += s.String(level)
 	}
 	return
 }
+
 func (*File) TypeCheck() {
 }

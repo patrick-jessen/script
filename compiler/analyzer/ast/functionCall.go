@@ -22,22 +22,20 @@ func (f *FunctionCall) Pos() file.Pos {
 	return f.Identifier.Pos()
 }
 
-func (f FunctionCall) String() (out string) {
-	out = fmt.Sprintf(
-		"%v %v",
+func (f FunctionCall) String(level int) (out string) {
+	out = f.Identifier.Pos().Info().Link()
+	out += strings.Repeat("  ", level)
+
+	out += fmt.Sprintf(
+		"%v %v\n",
 		color.Red("FunctionCall"),
-		f.Identifier,
+		f.Identifier.String(0),
 	)
 	if f.Args != nil {
 		argArr := f.Args.Args
-		args := "\n"
-		for i, a := range argArr {
-			args += fmt.Sprintf("%v", a)
-			if i != len(argArr)-1 {
-				args += "\n"
-			}
+		for _, a := range argArr {
+			out += a.String(level + 1)
 		}
-		out += strings.Replace(args, "\n", "\n  ", -1)
 	}
 	return
 }

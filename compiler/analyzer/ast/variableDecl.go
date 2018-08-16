@@ -23,15 +23,17 @@ func (v *VariableDecl) Pos() file.Pos {
 	return v.Identifier.Pos()
 }
 
-func (v *VariableDecl) String() string {
-	val := fmt.Sprintf("  %v", v.Value)
+func (v *VariableDecl) String(level int) (out string) {
+	out = v.Identifier.Pos().Info().Link()
+	out += strings.Repeat("  ", level)
 
-	return fmt.Sprintf(
-		"%v %v\n%v",
+	out += fmt.Sprintf(
+		"%v %v\n",
 		color.Red("VariableDecl"),
-		v.Identifier,
-		strings.Replace(val, "\n", "\n  ", -1),
+		v.Identifier.String(0),
 	)
+	out += v.Value.String(level + 1)
+	return
 }
 
 func (v *VariableDecl) TypeCheck() {

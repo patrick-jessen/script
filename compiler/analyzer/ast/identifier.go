@@ -29,7 +29,7 @@ func (i *Identifier) Pos() file.Pos {
 	return i.Symbol.Pos
 }
 
-func (i Identifier) String() (out string) {
+func (i Identifier) String(level int) (out string) {
 	if i.Typ.IsResolved {
 		return color.NewString("%v %v", color.Blue(i.Typ), color.Yellow(i.Name())).String()
 	}

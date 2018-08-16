@@ -18,7 +18,7 @@ func (v *VariableAssign) Pos() file.Pos {
 	return v.Identifier.Pos()
 }
 
-func (v VariableAssign) String() string {
+func (v VariableAssign) String(level int) string {
 	val := fmt.Sprintf("  %v", v.Value)
 
 	return fmt.Sprintf(

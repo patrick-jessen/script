@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/utils/file"
 	"github.com/patrick-jessen/script/utils/color"
+	"github.com/patrick-jessen/script/utils/file"
 )
 
 type Divide struct {
@@ -22,7 +22,7 @@ func (d *Divide) Type() Type {
 	return d.LHS.Type()
 }
 
-func (d Divide) String() string {
+func (d Divide) String(level int) string {
 	lhs := fmt.Sprintf("  %v", d.LHS)
 	rhs := fmt.Sprintf("  %v", d.RHS)
 

@@ -13,9 +13,8 @@ func (v *VariableRef) Name() string {
 func (v *VariableRef) Pos() file.Pos {
 	return v.Identifier.Pos()
 }
-
-func (v *VariableRef) String() string {
-	return v.Identifier.String()
+func (v *VariableRef) String(level int) string {
+	return v.Identifier.String(level)
 }
 
 func (v *VariableRef) Type() Type {

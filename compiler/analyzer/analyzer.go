@@ -76,7 +76,7 @@ func (a *Analyzer) Run() {
 		for k, v := range modMap {
 			fmt.Println(color.NewString("AST for module [%v]:", color.Red(k)))
 			for _, sym := range v.Symbols {
-				fmt.Println(sym)
+				fmt.Println(sym.String(1))
 			}
 		}
 	}
