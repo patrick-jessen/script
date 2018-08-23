@@ -2,14 +2,11 @@
 package parser
 
 import (
-	"fmt"
-
 	"github.com/patrick-jessen/script/compiler/analyzer/ast"
 	"github.com/patrick-jessen/script/compiler/analyzer/scanner"
 
 	"github.com/patrick-jessen/script/config"
 
-	"github.com/patrick-jessen/script/utils/color"
 	"github.com/patrick-jessen/script/utils/file"
 	"github.com/patrick-jessen/script/utils/token"
 )
@@ -46,12 +43,12 @@ func New(file *file.File) (p *Parser) {
 // Run runs the parser and returns the AST
 func (p *Parser) Run() (ret ast.Node) {
 	ret = p.parseFile()
-	if config.DebugTokens {
-		fmt.Println(color.NewString("tokens for [%v]:", color.Red(p.file.Path)))
-		for _, t := range p.Tokens {
-			fmt.Printf("%v\t%v\n", t.Pos.Info().Link(), t)
-		}
-	}
+	// if config.DebugTokens {
+	// 	fmt.Println(color.NewString("tokens for [%v]:", color.Red(p.file.Path)))
+	// 	for _, t := range p.Tokens {
+	// 		fmt.Printf("%v\t%v\n", t.Pos.Info().Link(), t)
+	// 	}
+	// }
 	return
 }
 
