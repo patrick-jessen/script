@@ -1,6 +1,6 @@
 package config
 
 const (
-	DebugTokens = true
+	DebugTokens = false
 	DebugAST    = true
 )

@@ -32,6 +32,7 @@ func (s *Scanner) Init(file *file.File) {
 func (s *Scanner) Scan() token.Token {
 	var done = false
 	for !done && !s.checkEOF() {
+		s.token.Value = ""
 		s.token.Pos = s.file.NewPos(s.iter)
 		done = s.scan()
 	}
