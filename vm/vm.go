@@ -27,31 +27,6 @@ type vm struct {
 	extern map[string]uintptr
 }
 
-func newVM(prog *generator.Program, debug bool) *vm {
-	vm := &vm{
-		prog:   prog,
-		extern: make(map[string]uintptr),
-		debug:  debug,
-	}
-
-	for libName, syms := range prog.SharedLibs {
-		lib, err := syscall.LoadLibrary(libName)
-		if err != nil {
-			panic(err)
-		}
-
-		for _, s := range syms {
-			proc, err := syscall.GetProcAddress(lib, s)
-			if err != nil {
-				panic(err)
-			}
-			vm.extern[libName+"."+s] = proc
-		}
-	}
-
-	return vm
-}
-
 func (vm *vm) printDebug(fn *ir.Function, inst int) {
 
 	var instLines []color.String
@@ -204,7 +179,7 @@ func (vm *vm) callC(fnName string) {
 	ret, _, err := syscall.Syscall6(fn, 4,
 		uintptr(vm.regs[1]), uintptr(vm.regs[2]),
 		uintptr(vm.regs[3]), uintptr(vm.regs[4]),
-		0, 0)
+		0)
 
 	if err != 0 {
 		fmt.Printf("cannot call external function '%v'\n", fnName)
