@@ -1,6 +1,10 @@
 package scanner
 
-import "github.com/patrick-jessen/script/utils/token"
+import (
+	"unicode"
+
+	"github.com/patrick-jessen/script/utils/token"
+)
 
 // Scan scans the next token
 // returns false to skip token
@@ -125,7 +129,7 @@ func (s *Scanner) scanString() string {
 			break
 		}
 	}
-	return s.file.Source[start+1 : s.iter]
+	return string(s.file.Source[start+1 : s.iter])
 }
 
 func (s *Scanner) scanIdentifer() string {
@@ -133,7 +137,7 @@ func (s *Scanner) scanIdentifer() string {
 	for isLetter(s.char) {
 		s.next()
 	}
-	return s.file.Source[start:s.iter]
+	return string(s.file.Source[start:s.iter])
 }
 
 func (s *Scanner) scanNumber() string {
@@ -141,7 +145,7 @@ func (s *Scanner) scanNumber() string {
 	for isDigit(s.char) {
 		s.next()
 	}
-	return s.file.Source[start:s.iter]
+	return string(s.file.Source[start:s.iter])
 }
 
 func keywordLookUp(str string) token.ID {
@@ -160,10 +164,10 @@ func keywordLookUp(str string) token.ID {
 	return token.Invalid
 }
 
-func isLetter(b byte) bool {
-	return 'a' <= b && b <= 'z' || 'A' <= b && b <= 'Z'
+func isLetter(b rune) bool {
+	return unicode.IsLetter(b)
 }
 
-func isDigit(b byte) bool {
-	return '0' <= b && b <= '9'
+func isDigit(b rune) bool {
+	return unicode.IsNumber(b)
 }

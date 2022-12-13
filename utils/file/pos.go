@@ -34,7 +34,7 @@ func (p Pos) Info() PosInfo {
 	if nextLinePos == 0 {
 		// the next line has not been marked yet
 		// crop line from source until EOS
-		line = p.file.Source[linePos:]
+		line = string(p.file.Source[linePos:])
 
 		// crop line at next '\n' (may not be present if EOS)
 		if nl := strings.Index(line, "\n"); nl != -1 {
@@ -43,7 +43,7 @@ func (p Pos) Info() PosInfo {
 	} else {
 		// the next line has been marked
 		// crop from this line to next line
-		line = p.file.Source[linePos : nextLinePos-1]
+		line = string(p.file.Source[linePos : nextLinePos-1])
 	}
 
 	// calculate column position (1-indexed)
@@ -83,8 +83,9 @@ func (p PosInfo) Link() string {
 // String returns the line of the position, with an arrow which points
 // to the position.
 // Example output:
-// func main() {
-//      ^
+//
+//	func main() {
+//	    ^
 func (p PosInfo) String() string {
 	arrow := strings.Repeat(" ", p.ColumnNo-1) + "^"
 	return fmt.Sprintf("%v\n%v", p.Line, arrow)

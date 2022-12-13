@@ -7,7 +7,7 @@ import (
 // File represents a single source file
 type File struct {
 	Path    string   // path of the file
-	Source  string   // source of the file
+	Source  []rune   // source of the file
 	Errors  []*Error // list of reported errors
 	linePos []int    // positions of lines
 }
@@ -20,12 +20,12 @@ func Load(path string) *File {
 	}
 	return &File{
 		Path:   path,
-		Source: string(b),
+		Source: []rune(string(b)),
 	}
 }
 
 func (f *File) Contents() string {
-	return f.Source
+	return string(f.Source)
 }
 
 // MarkLine marks the beginning of a new line.

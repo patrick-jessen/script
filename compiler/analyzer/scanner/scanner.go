@@ -14,7 +14,7 @@ import (
 type Scanner struct {
 	file *file.File // the source file
 	iter int        // current index into the source string
-	char byte       // current character
+	char rune       // current character
 
 	token  token.Token   // current token
 	tokens []token.Token // all tokens (if config.DebugTokens == true)
