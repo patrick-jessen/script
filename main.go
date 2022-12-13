@@ -6,87 +6,55 @@ import (
 
 	"github.com/patrick-jessen/script/compiler/analyzer"
 	"github.com/patrick-jessen/script/compiler/generator"
-	"github.com/patrick-jessen/script/compiler/linker"
-	"github.com/patrick-jessen/script/utils/color"
-	"github.com/patrick-jessen/script/vm"
+	"github.com/patrick-jessen/script/config"
+	"github.com/spf13/cobra"
 )
 
-type command int
-
-const compVer = "0.1"
-const (
-	cmdRun command = iota
-	cmdDebug
-	cmdBuild
-)
-
-var (
-	dir = "./src" // TODO: change to ./
-	cmd = cmdRun
-)
-
-func printHelp() {
-	fmt.Println(
-		"Script ver. " + compVer + "\n" +
-			"Usage:\n" +
-			"    script <command> [srcDir]\n" +
-			"Commands:\n" +
-			"    run\n" +
-			"        runs the application\n" +
-			"    debug\n" +
-			"        debugs the application\n" +
-			"    build\n" +
-			"        builds the application to an executable\n",
-	)
+var rootCmd = &cobra.Command{
+	Version:           "0.1",
+	Use:               "script",
+	Short:             "script is a compiler",
+	CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 }
 
-func handleArgs() bool {
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "run":
-			cmd = cmdRun
-		case "build":
-			cmd = cmdBuild
-		case "debug":
-			cmd = cmdDebug
-		default:
-			fmt.Println(color.Red("Invalid command\n"))
-			printHelp()
-			return false
-		}
-	} else {
-		printHelp()
-		return false
-	}
+func init() {
+	buildCmd := &cobra.Command{
+		Use:   "build [path]",
+		Short: "Build to WebAssembly",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
 
-	if len(os.Args) > 2 {
-		dir = os.Args[2]
-		if _, err := os.Stat(dir); err != nil {
-			fmt.Println(color.Red("Invalid path\n"))
-			printHelp()
-			return false
-		}
+			dir := args[0]
+			// format, _ := cmd.Flags().GetString("format")
+			// output, _ := cmd.Flags().GetString("output")
+
+			debugTokens, _ := cmd.Flags().GetBool("tokens")
+			debugAST, _ := cmd.Flags().GetBool("ast")
+
+			config.DebugTokens = debugTokens
+			config.DebugAST = debugAST
+
+			analyzer := analyzer.New(dir)
+			analyzer.Run()
+
+			generator := generator.New(analyzer)
+			generator.Run()
+
+			return nil
+		},
 	}
-	return true
+	buildCmd.Flags().StringP("format", "f", "wat", "Output format")
+	buildCmd.Flags().StringP("output", "o", "", "Output file (default \"stdout\")")
+	buildCmd.Flags().Bool("tokens", false, "Debug tokens")
+	buildCmd.Flags().Bool("ast", false, "Debug AST")
+
+	rootCmd.AddCommand(buildCmd)
 }
 
 func main() {
-	if !handleArgs() {
-		return
-	}
-
-	analyzer := analyzer.New(dir)
-	analyzer.Run()
-
-	generator := generator.New(analyzer)
-	prog := generator.Run()
-
-	switch cmd {
-	case cmdRun:
-		vm.Run(prog, false)
-	case cmdDebug:
-		vm.Run(prog, true)
-	case cmdBuild:
-		linker.Run(prog)
+	err := rootCmd.Execute()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }

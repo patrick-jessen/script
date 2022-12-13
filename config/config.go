@@ -1,6 +1,6 @@
 package config
 
-const (
-	DebugTokens = false
-	DebugAST    = true
+var (
+	DebugTokens = true
+	DebugAST    = false
 )
