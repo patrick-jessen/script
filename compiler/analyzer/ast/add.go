@@ -2,9 +2,7 @@ package ast
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/patrick-jessen/script/utils/color"
 	"github.com/patrick-jessen/script/utils/file"
 )
 
@@ -14,32 +12,25 @@ type Add struct {
 	OpPos file.Pos
 }
 
-func (a *Add) Pos() file.Pos {
-	return a.LHS.Pos()
+func (n *Add) Pos() file.Pos {
+	return n.LHS.Pos()
 }
 
-func (a *Add) Type() Type {
-	return a.LHS.Type()
+func (n *Add) Children() []Node {
+	return []Node{n.LHS, n.RHS}
 }
 
-func (a Add) String(level int) string {
-	lhs := fmt.Sprintf("  %v", a.LHS)
-	rhs := fmt.Sprintf("  %v", a.RHS)
-
-	return fmt.Sprintf(
-		"%v\n%v\n%v",
-		color.Red("Add"),
-		strings.Replace(lhs, "\n", "\n  ", -1),
-		strings.Replace(rhs, "\n", "\n  ", -1),
-	)
+func (n *Add) Type() Type {
+	return n.LHS.Type()
 }
-func (a *Add) TypeCheck() {
-	lhsTyp := a.LHS.Type()
-	rhsTyp := a.RHS.Type()
+
+func (n *Add) TypeCheck() {
+	lhsTyp := n.LHS.Type()
+	rhsTyp := n.RHS.Type()
 
 	if lhsTyp.IsResolved && rhsTyp.IsResolved {
 		if lhsTyp.Return != rhsTyp.Return {
-			a.OpPos.MarkError(fmt.Sprintf("cannot add types %v and %v", lhsTyp, rhsTyp))
+			n.OpPos.MarkError(fmt.Sprintf("cannot add types %v and %v", lhsTyp, rhsTyp))
 		}
 	}
 }

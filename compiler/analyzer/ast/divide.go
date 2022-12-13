@@ -1,10 +1,6 @@
 package ast
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/patrick-jessen/script/utils/color"
 	"github.com/patrick-jessen/script/utils/file"
 )
 
@@ -14,24 +10,17 @@ type Divide struct {
 	OpPos file.Pos
 }
 
-func (d *Divide) Pos() file.Pos {
-	return d.LHS.Pos()
+func (n *Divide) Pos() file.Pos {
+	return n.LHS.Pos()
 }
 
-func (d *Divide) Type() Type {
-	return d.LHS.Type()
+func (n *Divide) Children() []Node {
+	return []Node{n.LHS, n.RHS}
 }
 
-func (d Divide) String(level int) string {
-	lhs := fmt.Sprintf("  %v", d.LHS)
-	rhs := fmt.Sprintf("  %v", d.RHS)
-
-	return fmt.Sprintf(
-		"%v\n%v\n%v",
-		color.Red("Divide"),
-		strings.Replace(lhs, "\n", "\n  ", -1),
-		strings.Replace(rhs, "\n", "\n  ", -1),
-	)
+func (n *Divide) Type() Type {
+	return n.LHS.Type()
 }
-func (*Divide) TypeCheck() {
+
+func (n *Divide) TypeCheck() {
 }

@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"github.com/patrick-jessen/script/utils/color"
 	"github.com/patrick-jessen/script/utils/file"
 	"github.com/patrick-jessen/script/utils/token"
 )
@@ -17,31 +16,28 @@ type Identifier struct {
 	Obj    *Object
 }
 
-func (i *Identifier) Name() (out string) {
-	if i.Module.ID != token.Invalid {
-		out = i.Module.Value + "."
+func (n *Identifier) Pos() file.Pos {
+	return n.Symbol.Pos
+}
+
+func (n *Identifier) Children() []Node {
+	return nil
+}
+
+func (n *Identifier) Name() (out string) {
+	if n.Module.ID != token.Invalid {
+		out = n.Module.Value + "."
 	}
-	out += i.Symbol.Value
+	out += n.Symbol.Value
 	return
 }
 
-func (i *Identifier) Pos() file.Pos {
-	return i.Symbol.Pos
+func (n *Identifier) Type() Type {
+	return n.Typ
+}
+func (n *Identifier) TypeCheck() {
 }
 
-func (i Identifier) String(level int) (out string) {
-	if i.Typ.IsResolved {
-		return color.NewString("%v %v", color.Blue(i.Typ), color.Yellow(i.Name())).String()
-	}
-	return color.Yellow(i.Name()).String()
-}
-
-func (i *Identifier) Type() Type {
-	return i.Typ
-}
-func (*Identifier) TypeCheck() {
-}
-
-func (i *Identifier) Ident() *Identifier {
-	return i
+func (n *Identifier) Ident() *Identifier {
+	return n
 }

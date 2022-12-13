@@ -22,7 +22,7 @@ func init() {
 		Use:   "build [path]",
 		Short: "Build to WebAssembly",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 
 			dir := args[0]
 			// format, _ := cmd.Flags().GetString("format")
@@ -35,12 +35,13 @@ func init() {
 			config.DebugAST = debugAST
 
 			analyzer := analyzer.New(dir)
-			analyzer.Run()
+			err := analyzer.Run()
+			if err != nil {
+				os.Exit(1)
+			}
 
 			generator := generator.New(analyzer)
 			generator.Run()
-
-			return nil
 		},
 	}
 	buildCmd.Flags().StringP("format", "f", "wat", "Output format")

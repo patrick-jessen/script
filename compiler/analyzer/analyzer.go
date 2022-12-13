@@ -30,7 +30,7 @@ func New(dir string) *Analyzer {
 	}
 }
 
-func (a *Analyzer) Run() {
+func (a *Analyzer) Run() error {
 	var modMap = map[string]*module.Module{}
 
 	// analyze modules
@@ -76,7 +76,7 @@ func (a *Analyzer) Run() {
 		for k, v := range modMap {
 			fmt.Println(color.NewString("AST for module [%v]:", color.Red(k)))
 			for _, sym := range v.Symbols {
-				fmt.Println(sym.String(1))
+				fmt.Println(ast.FormatAST(sym))
 			}
 		}
 	}
@@ -84,7 +84,9 @@ func (a *Analyzer) Run() {
 	// print errors (if any)
 	if a.hasErrors() {
 		a.printErrors()
+		return fmt.Errorf("compilation aborted due to errors")
 	}
+	return nil
 }
 
 func (a *Analyzer) AddExternalLib(libName string) {

@@ -1,10 +1,6 @@
 package ast
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/patrick-jessen/script/utils/color"
 	"github.com/patrick-jessen/script/utils/file"
 )
 
@@ -14,36 +10,29 @@ type FunctionDecl struct {
 	Block      *Block
 }
 
-func (f *FunctionDecl) Ident() *Identifier {
-	return f.Identifier
+func (n *FunctionDecl) Pos() file.Pos {
+	return n.Identifier.Pos()
 }
 
-func (f *FunctionDecl) Name() string {
-	return f.Identifier.Name()
+func (n *FunctionDecl) Children() []Node {
+	return []Node{n.Block}
 }
 
-func (f FunctionDecl) String(level int) (out string) {
-	out = f.Identifier.Pos().Info().Link()
-	out += strings.Repeat("  ", level)
-
-	out += fmt.Sprintf("%v %v\n",
-		color.Red("FunctionDecl"),
-		f.Identifier.String(0),
-	)
-
-	if len(f.Block.Statements) > 0 {
-		out += f.Block.String(level + 1)
-	}
-	return
+func (n *FunctionDecl) Ident() *Identifier {
+	return n.Identifier
 }
 
-func (f *FunctionDecl) Init() {
+func (n *FunctionDecl) Name() string {
+	return n.Identifier.Name()
+}
+
+func (n *FunctionDecl) Init() {
 	var args []string
-	for _, a := range f.Args {
+	for _, a := range n.Args {
 		args = append(args, a.Type().Return)
 	}
 
-	f.Identifier.Typ = Type{
+	n.Identifier.Typ = Type{
 		IsResolved: true,
 		IsFunction: true,
 		Return:     "void",
@@ -51,13 +40,10 @@ func (f *FunctionDecl) Init() {
 	}
 }
 
-func (f *FunctionDecl) Type() Type {
-	return f.Identifier.Type()
+func (n *FunctionDecl) Type() Type {
+	return n.Identifier.Type()
 }
 
-func (f *FunctionDecl) Pos() file.Pos {
-	return f.Identifier.Pos()
-}
-func (f *FunctionDecl) TypeCheck() {
-	f.Block.TypeCheck()
+func (n *FunctionDecl) TypeCheck() {
+	n.Block.TypeCheck()
 }

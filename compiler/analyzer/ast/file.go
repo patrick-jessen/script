@@ -8,16 +8,13 @@ type File struct {
 	Declarations []Node
 }
 
-func (m *File) Pos() file.Pos {
-	return m.Declarations[0].Pos()
+func (n *File) Pos() file.Pos {
+	return n.Declarations[0].Pos()
 }
 
-func (m File) String(level int) (out string) {
-	for _, s := range m.Declarations {
-		out += s.String(level)
-	}
-	return
+func (n *File) Children() []Node {
+	return n.Declarations
 }
 
-func (*File) TypeCheck() {
+func (n *File) TypeCheck() {
 }

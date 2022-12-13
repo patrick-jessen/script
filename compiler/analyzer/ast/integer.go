@@ -9,19 +9,24 @@ type Integer struct {
 	Token token.Token
 }
 
-func (i *Integer) Pos() file.Pos {
-	return i.Token.Pos
+func (n *Integer) Pos() file.Pos {
+	return n.Token.Pos
 }
 
-func (i *Integer) String(level int) string {
-	return i.Token.String()
+func (n *Integer) Children() []Node {
+	return nil
 }
 
-func (i *Integer) Type() Type {
+func (n *Integer) Type() Type {
 	return Type{
 		IsResolved: true,
 		Return:     "int",
 	}
 }
-func (*Integer) TypeCheck() {
+
+func (n *Integer) Value() string {
+	return n.Token.Value
+}
+
+func (n *Integer) TypeCheck() {
 }

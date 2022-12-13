@@ -9,19 +9,20 @@ type Float struct {
 	Token token.Token
 }
 
-func (f *Float) Pos() file.Pos {
-	return f.Token.Pos
+func (n *Float) Pos() file.Pos {
+	return n.Token.Pos
 }
 
-func (f *Float) Type() Type {
+func (n *Float) Children() []Node {
+	return nil
+}
+
+func (n *Float) Type() Type {
 	return Type{
 		IsResolved: true,
 		Return:     "float",
 	}
 }
 
-func (f *Float) String(level int) string {
-	return f.Token.String()
-}
-func (*Float) TypeCheck() {
+func (n *Float) TypeCheck() {
 }

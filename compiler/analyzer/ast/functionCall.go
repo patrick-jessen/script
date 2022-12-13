@@ -2,9 +2,7 @@ package ast
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/patrick-jessen/script/utils/color"
 	"github.com/patrick-jessen/script/utils/file"
 )
 
@@ -14,64 +12,54 @@ type FunctionCall struct {
 	LastParentPos file.Pos
 }
 
-func (f *FunctionCall) Name() string {
-	return f.Identifier.Name()
+func (n *FunctionCall) Pos() file.Pos {
+	return n.Identifier.Pos()
 }
 
-func (f *FunctionCall) Pos() file.Pos {
-	return f.Identifier.Pos()
-}
-
-func (f FunctionCall) String(level int) (out string) {
-	out = f.Identifier.Pos().Info().Link()
-	out += strings.Repeat("  ", level)
-
-	out += fmt.Sprintf(
-		"%v %v\n",
-		color.Red("FunctionCall"),
-		f.Identifier.String(0),
-	)
-	if f.Args != nil {
-		argArr := f.Args.Args
-		for _, a := range argArr {
-			out += a.String(level + 1)
-		}
+func (n *FunctionCall) Children() []Node {
+	var nodes []Node
+	for _, a := range n.Args.Args {
+		nodes = append(nodes, a)
 	}
-	return
+	return nodes
 }
 
-func (f *FunctionCall) Type() Type {
-	return f.Identifier.Type()
+func (n *FunctionCall) Name() string {
+	return n.Identifier.Name()
 }
 
-func (f *FunctionCall) SetType(t Type) {
-	f.Identifier.Typ = t
+func (n *FunctionCall) Type() Type {
+	return n.Identifier.Type()
 }
-func (f *FunctionCall) TypeCheck() {
-	if !f.Type().IsResolved {
+
+func (n *FunctionCall) SetType(t Type) {
+	n.Identifier.Typ = t
+}
+func (n *FunctionCall) TypeCheck() {
+	if !n.Type().IsResolved {
 		return
 	}
 
 	numArgs := 0
-	if f.Args != nil {
-		f.Args.TypeCheck()
-		numArgs = len(f.Args.Args)
+	if n.Args != nil {
+		n.Args.TypeCheck()
+		numArgs = len(n.Args.Args)
 	}
 
-	if numArgs != len(f.Type().Args) {
-		f.LastParentPos.MarkError(fmt.Sprintf(
+	if numArgs != len(n.Type().Args) {
+		n.LastParentPos.MarkError(fmt.Sprintf(
 			"incorrect number of arguments. Expected %v, got %v",
-			len(f.Type().Args), numArgs,
+			len(n.Type().Args), numArgs,
 		))
 	}
-	for i, a := range f.Type().Args {
+	for i, a := range n.Type().Args {
 		if i == numArgs {
 			break
 		}
 
-		r := f.Args.Args[i].Type().Return
+		r := n.Args.Args[i].Type().Return
 		if r != a {
-			f.Args.Args[i].Pos().MarkError(fmt.Sprintf(
+			n.Args.Args[i].Pos().MarkError(fmt.Sprintf(
 				"expected %v, got %v", a, r,
 			))
 		}

@@ -2,9 +2,7 @@ package ast
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/patrick-jessen/script/utils/color"
 	"github.com/patrick-jessen/script/utils/file"
 )
 
@@ -14,30 +12,23 @@ type VariableAssign struct {
 	EqPos      file.Pos
 }
 
-func (v *VariableAssign) Pos() file.Pos {
-	return v.Identifier.Pos()
+func (n *VariableAssign) Pos() file.Pos {
+	return n.Identifier.Pos()
 }
 
-func (v VariableAssign) String(level int) string {
-	val := fmt.Sprintf("  %v", v.Value)
-
-	return fmt.Sprintf(
-		"%v %v\n%v",
-		color.Red("VariableAssign"),
-		v.Identifier,
-		strings.Replace(val, "\n", "\n  ", -1),
-	)
+func (n *VariableAssign) Children() []Node {
+	return []Node{n.Value}
 }
 
-func (v *VariableAssign) Name() string {
-	return v.Identifier.Name()
+func (n *VariableAssign) Name() string {
+	return n.Identifier.Name()
 }
 
-func (v *VariableAssign) TypeCheck() {
-	v.Value.TypeCheck()
+func (n *VariableAssign) TypeCheck() {
+	n.Value.TypeCheck()
 
-	if !v.Identifier.Type().IsCompatible(v.Value.Type()) {
-		v.EqPos.MarkError(fmt.Sprintf("cannot assign type %v to %v",
-			v.Value.Type(), v.Identifier.Type()))
+	if !n.Identifier.Type().IsCompatible(n.Value.Type()) {
+		n.EqPos.MarkError(fmt.Sprintf("cannot assign type %v to %v",
+			n.Value.Type(), n.Identifier.Type()))
 	}
 }

@@ -8,19 +8,16 @@ type Block struct {
 	Statements []Node
 }
 
-func (b *Block) Pos() file.Pos {
-	return b.Statements[0].Pos()
+func (n *Block) Pos() file.Pos {
+	return n.Statements[0].Pos()
 }
 
-func (b *Block) String(level int) (out string) {
-	for _, s := range b.Statements {
-		out += s.String(level)
-	}
-	return
+func (n *Block) Children() []Node {
+	return n.Statements
 }
 
-func (b *Block) TypeCheck() {
-	for _, s := range b.Statements {
+func (n *Block) TypeCheck() {
+	for _, s := range n.Statements {
 		s.TypeCheck()
 	}
 }

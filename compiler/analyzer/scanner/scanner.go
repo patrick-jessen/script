@@ -3,6 +3,8 @@ package scanner
 
 import (
 	"fmt"
+	"os"
+	"text/tabwriter"
 
 	"github.com/patrick-jessen/script/config"
 	"github.com/patrick-jessen/script/utils/color"
@@ -84,8 +86,11 @@ func (s *Scanner) checkEOF() bool {
 // printTokens prints the tokens in human readable format
 // only valid if config.DebugTokens == true
 func (s *Scanner) printTokens() {
-	fmt.Println(color.NewString("tokens for [%v]:", color.Red(s.file.Path)))
+	w := tabwriter.NewWriter(os.Stdout, 20, 30, 0, '\t', tabwriter.AlignRight)
 	for _, t := range s.tokens {
-		fmt.Printf("%v\t%v\n", t.Pos.Info().Link(), t)
+		w.Write([]byte(fmt.Sprintf("%v\t%v\n", t.Pos.Info().Link(), t)))
 	}
+
+	fmt.Println(color.NewString("tokens for [%v]:", color.Red(s.file.Path)))
+	w.Flush()
 }
