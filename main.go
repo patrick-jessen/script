@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/patrick-jessen/script/compiler/analyzer"
-	"github.com/patrick-jessen/script/compiler/generator"
 	"github.com/patrick-jessen/script/config"
 	"github.com/spf13/cobra"
 )
@@ -22,30 +21,51 @@ func init() {
 		Use:   "build [path]",
 		Short: "Build to WebAssembly",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Extract arguments
 			dir := args[0]
-			// format, _ := cmd.Flags().GetString("format")
-			// output, _ := cmd.Flags().GetString("output")
+
+			output, _ := cmd.Flags().GetString("output")
+			format, _ := cmd.Flags().GetString("format")
+			if format != "wat" && format != "wasm" {
+				return fmt.Errorf("unsupported format")
+			}
 
 			debugTokens, _ := cmd.Flags().GetBool("tokens")
 			debugAST, _ := cmd.Flags().GetBool("ast")
-
 			config.DebugTokens = debugTokens
 			config.DebugAST = debugAST
 
+			// Run the compiler
 			analyzer := analyzer.New(dir)
 			err := analyzer.Run()
 			if err != nil {
 				os.Exit(1)
 			}
 
-			generator := generator.New(analyzer)
-			generator.Run()
+			// generator := generator.New(analyzer)
+			// generator.Run()
+
+			generatedOutput := []byte("<generated output>")
+
+			// Ouput the result
+			if len(output) > 0 {
+				err := os.WriteFile(output, generatedOutput, 0666)
+				if err != nil {
+					return err
+				}
+			} else {
+				if format == "wat" {
+					fmt.Println(string(generatedOutput))
+				} else {
+					os.Stdout.Write(generatedOutput)
+				}
+			}
+			return nil
 		},
 	}
-	buildCmd.Flags().StringP("format", "f", "wat", "Output format")
-	buildCmd.Flags().StringP("output", "o", "", "Output file (default \"stdout\")")
+	buildCmd.Flags().StringP("format", "f", "wat", `Output format ["wasm", "wat"]`)
+	buildCmd.Flags().StringP("output", "o", "", "Output file (if not specified output is written to stdout)")
 	buildCmd.Flags().Bool("tokens", false, "Debug tokens")
 	buildCmd.Flags().Bool("ast", false, "Debug AST")
 
