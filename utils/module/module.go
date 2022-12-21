@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/patrick-jessen/script/compiler/analyzer/ast"
+	"github.com/patrick-jessen/script/utils/ast"
 	"github.com/patrick-jessen/script/utils/file"
 )
 
@@ -16,9 +16,9 @@ type Module struct {
 	Name  string
 	Files []*file.File
 
-	Symbols map[string]ast.Declarable
-	Imports []*ast.Identifier
-	Exports map[string]ast.Declarable
+	Symbols map[string]ast.Node
+	Imports []ast.Node
+	Exports map[string]ast.Node
 }
 
 func (m *Module) HasErrors() bool {

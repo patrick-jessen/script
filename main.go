@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/patrick-jessen/script/compiler/analyzer"
-	"github.com/patrick-jessen/script/compiler/generator"
+	"github.com/patrick-jessen/script/compiler"
 	"github.com/patrick-jessen/script/config"
+	"github.com/patrick-jessen/script/lang/jlang"
 	"github.com/spf13/cobra"
 )
 
@@ -40,15 +40,11 @@ func init() {
 			config.NoColor = noColor
 
 			// Run the compiler
-			analyzer := analyzer.New(dir)
+			analyzer := compiler.NewAnalyzer(dir, &jlang.JLang{})
 			err := analyzer.Run()
 			if err != nil {
 				os.Exit(1)
 			}
-
-			generator := generator.New(analyzer)
-			prog := generator.Run()
-			fmt.Println(prog)
 
 			generatedOutput := []byte("<generated output>")
 
