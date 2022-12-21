@@ -3,6 +3,7 @@ package scanner
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"text/tabwriter"
 
@@ -86,11 +87,13 @@ func (s *Scanner) checkEOF() bool {
 // printTokens prints the tokens in human readable format
 // only valid if config.DebugTokens == true
 func (s *Scanner) printTokens() {
-	w := tabwriter.NewWriter(os.Stdout, 20, 30, 0, '\t', tabwriter.AlignRight)
+	l := log.New(os.Stderr, "", 0)
+	w := tabwriter.NewWriter(os.Stderr, 20, 30, 0, '\t', tabwriter.AlignRight)
 	for _, t := range s.tokens {
 		w.Write([]byte(fmt.Sprintf("%v\t%v\n", t.Pos.Info().Link(), t)))
 	}
 
-	fmt.Println(color.NewString("tokens for [%v]:", color.Red(s.file.Path)))
+	l.Println(color.NewString("tokens for [%v]:", color.Red(s.file.Path)))
 	w.Flush()
+	l.Println()
 }

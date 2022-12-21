@@ -2,6 +2,8 @@ package analyzer
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"path"
 	"strings"
 
@@ -73,10 +75,11 @@ func (a *Analyzer) Run() error {
 	a.performTypeCheck(modMap)
 
 	if config.DebugAST {
+		l := log.New(os.Stderr, "", 0)
 		for k, v := range modMap {
-			fmt.Println(color.NewString("AST for module [%v]:", color.Red(k)))
+			l.Println(color.NewString("AST for module [%v]:", color.Red(k)))
 			for _, sym := range v.Symbols {
-				fmt.Println(ast.FormatAST(sym))
+				l.Println(ast.FormatAST(sym))
 			}
 		}
 	}
