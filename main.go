@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/patrick-jessen/script/compiler/analyzer"
+	"github.com/patrick-jessen/script/compiler/generator"
 	"github.com/patrick-jessen/script/config"
 	"github.com/spf13/cobra"
 )
@@ -31,10 +32,12 @@ func init() {
 				return fmt.Errorf("unsupported format")
 			}
 
-			debugTokens, _ := cmd.Flags().GetBool("tokens")
-			debugAST, _ := cmd.Flags().GetBool("ast")
+			debugTokens, _ := cmd.Flags().GetBool("debug-tokens")
+			debugAST, _ := cmd.Flags().GetBool("debug-ast")
+			noColor, _ := cmd.Flags().GetBool("no-color")
 			config.DebugTokens = debugTokens
 			config.DebugAST = debugAST
+			config.NoColor = noColor
 
 			// Run the compiler
 			analyzer := analyzer.New(dir)
@@ -43,8 +46,9 @@ func init() {
 				os.Exit(1)
 			}
 
-			// generator := generator.New(analyzer)
-			// generator.Run()
+			generator := generator.New(analyzer)
+			prog := generator.Run()
+			fmt.Println(prog)
 
 			generatedOutput := []byte("<generated output>")
 
@@ -66,8 +70,9 @@ func init() {
 	}
 	buildCmd.Flags().StringP("format", "f", "wat", `Output format ["wasm", "wat"]`)
 	buildCmd.Flags().StringP("output", "o", "", "Output file (if not specified output is written to stdout)")
-	buildCmd.Flags().Bool("tokens", false, "Debug tokens")
-	buildCmd.Flags().Bool("ast", false, "Debug AST")
+	buildCmd.Flags().Bool("no-color", false, `Disable color in debug output`)
+	buildCmd.Flags().Bool("debug-tokens", false, "Debug tokens")
+	buildCmd.Flags().Bool("debug-ast", false, "Debug AST")
 
 	rootCmd.AddCommand(buildCmd)
 }

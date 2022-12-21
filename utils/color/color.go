@@ -3,6 +3,8 @@ package color
 import (
 	"fmt"
 	"strings"
+
+	"github.com/patrick-jessen/script/config"
 )
 
 type color int
@@ -22,27 +24,43 @@ func White(str interface{}) String {
 	}
 }
 func Red(str interface{}) String {
+	color := red
+	if config.NoColor {
+		color = white
+	}
 	return String{
 		string: fmt.Sprintf("%v", str),
-		color:  red,
+		color:  color,
 	}
 }
 func Green(str interface{}) String {
+	color := green
+	if config.NoColor {
+		color = white
+	}
 	return String{
 		string: fmt.Sprintf("%v", str),
-		color:  green,
+		color:  color,
 	}
 }
 func Yellow(str interface{}) String {
+	color := yellow
+	if config.NoColor {
+		color = white
+	}
 	return String{
 		string: fmt.Sprintf("%v", str),
-		color:  yellow,
+		color:  color,
 	}
 }
 func Blue(str interface{}) String {
+	color := blue
+	if config.NoColor {
+		color = white
+	}
 	return String{
 		string: fmt.Sprintf("%v", str),
-		color:  blue,
+		color:  color,
 	}
 }
 

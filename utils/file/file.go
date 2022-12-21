@@ -1,8 +1,6 @@
 package file
 
-import (
-	"io/ioutil"
-)
+import "os"
 
 // File represents a single source file
 type File struct {
@@ -14,7 +12,7 @@ type File struct {
 
 // Load loads a source file from disk
 func Load(path string) *File {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}
@@ -24,6 +22,7 @@ func Load(path string) *File {
 	}
 }
 
+// Contents returns the file contents as a string
 func (f *File) Contents() string {
 	return string(f.Source)
 }

@@ -8,7 +8,7 @@ import (
 // Pos represents a position in a source file
 type Pos struct {
 	file  *File // file that the position belongs to
-	index int   // index into the source string
+	index int   // rune-index into the source string
 }
 
 // Info obtains information regarding the position

@@ -40,7 +40,7 @@ func (a *Analyzer) Run() error {
 		mod := a.Modules[i]
 		a.analyzeModule(mod)
 
-		modMap[mod.Name()] = mod
+		modMap[mod.Name] = mod
 	}
 
 	// link modules
@@ -119,8 +119,6 @@ func (a *Analyzer) printErrors() {
 }
 
 func (a *Analyzer) performTypeCheck(modMap map[string]*module.Module) {
-	defer func() { recover() }()
-
 	for _, mod := range modMap {
 		for _, sym := range mod.Symbols {
 			sym.TypeCheck()
@@ -199,7 +197,7 @@ func (a *Analyzer) importModule(imp string) (err error) {
 
 	// ignore if module is already imported
 	for _, m := range a.Modules {
-		if m.Dir() == path {
+		if m.Dir == path {
 			return
 		}
 	}

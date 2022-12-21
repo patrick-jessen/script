@@ -55,8 +55,7 @@ func (g *Generator) generateExpression(n ast.Expression, reg int) (out []ir.Inst
 				Src: ir.Register(-exp.Identifier.Obj.Num),
 			})
 		} else {
-			fmt.Println("KEK")
-			panic("Not implemented")
+			fmt.Println("Not implemented")
 		}
 	default:
 		fmt.Println("hue", exp, reflect.TypeOf(exp))
@@ -114,7 +113,7 @@ func (g *Generator) generateModule(m *module.Module) {
 	for _, s := range m.Symbols {
 		switch n := s.(type) {
 		case *ast.FunctionDecl:
-			g.generateFunction(n, m.Name())
+			g.generateFunction(n, m.Name)
 		}
 	}
 }

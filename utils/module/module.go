@@ -12,8 +12,8 @@ import (
 )
 
 type Module struct {
-	dir   string
-	name  string
+	Dir   string
+	Name  string
 	Files []*file.File
 
 	Symbols map[string]ast.Declarable
@@ -46,7 +46,7 @@ func Load(dir string, name string) *Module {
 		panic(err)
 	}
 
-	mod := &Module{name: name, dir: dir}
+	mod := &Module{Name: name, Dir: dir}
 
 	// load all *.j files
 	for _, f := range files {
@@ -56,12 +56,4 @@ func Load(dir string, name string) *Module {
 		}
 	}
 	return mod
-}
-
-func (m *Module) Name() string {
-	return m.name
-}
-
-func (m *Module) Dir() string {
-	return m.dir
 }
