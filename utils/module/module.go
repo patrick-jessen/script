@@ -1,8 +1,9 @@
 package module
 
 import (
-	"fmt"
 	"io/ioutil"
+	"log"
+	"os"
 	"path"
 	"strings"
 
@@ -30,9 +31,10 @@ func (m *Module) HasErrors() bool {
 }
 
 func (m *Module) PrintErrors() {
+	l := log.New(os.Stderr, "", 0)
 	for _, f := range m.Files {
 		for _, e := range f.Errors {
-			fmt.Println(e)
+			l.Println(e)
 		}
 	}
 }
