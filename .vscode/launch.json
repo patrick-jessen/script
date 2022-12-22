@@ -10,7 +10,13 @@
       "request": "launch",
       "program": "${workspaceRoot}",
       "env": {},
-      "args": ["build", "./src", "--debug-ast", "--debug-tokens"],
+      "args": [
+        "build",
+        "./src",
+        "--lang=json",
+        "--debug-ast",
+        "--debug-tokens"
+      ],
       "showLog": true
     }
   ]

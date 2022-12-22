@@ -1,21 +1,22 @@
 package nodes
 
 import (
-	"github.com/patrick-jessen/script/utils/ast"
-	"github.com/patrick-jessen/script/utils/file"
+	"github.com/patrick-jessen/script/compiler/ast"
 )
 
 type File struct {
-	Declarations []ast.Node
+	Declarations []Declarable
 }
 
-func (n *File) Pos() file.Pos {
-	return n.Declarations[0].Pos()
-}
+func (n *File) Info() ast.NodeInfo {
+	var children []ast.Node
+	for _, decl := range n.Declarations {
+		children = append(children, decl)
+	}
 
-func (n *File) Children() []ast.Node {
-	return n.Declarations
-}
-
-func (n *File) TypeCheck() {
+	return ast.NodeInfo{
+		Type:     "file",
+		Pos:      n.Declarations[0].Info().Pos, // TODO: handle empty file
+		Children: children,
+	}
 }

@@ -1,10 +1,8 @@
 package nodes
 
 import (
-	"fmt"
-
-	"github.com/patrick-jessen/script/utils/ast"
-	"github.com/patrick-jessen/script/utils/file"
+	"github.com/patrick-jessen/script/compiler/ast"
+	"github.com/patrick-jessen/script/compiler/file"
 )
 
 type VariableAssign struct {
@@ -13,23 +11,20 @@ type VariableAssign struct {
 	EqPos      file.Pos
 }
 
-func (n *VariableAssign) Pos() file.Pos {
-	return n.Identifier.Pos()
-}
-
-func (n *VariableAssign) Children() []ast.Node {
-	return []ast.Node{n.Value}
-}
-
-func (n *VariableAssign) Name() string {
-	return n.Identifier.Name()
-}
-
-func (n *VariableAssign) TypeCheck() {
-	n.Value.TypeCheck()
-
-	if !n.Identifier.Type().IsCompatible(n.Value.Type()) {
-		n.EqPos.MarkError(fmt.Sprintf("cannot assign type %v to %v",
-			n.Value.Type(), n.Identifier.Type()))
+func (n *VariableAssign) Info() ast.NodeInfo {
+	return ast.NodeInfo{
+		Type:     "variableAssign",
+		Pos:      n.EqPos,
+		Name:     n.Identifier.Info().Name,
+		Children: []ast.Node{n.Value},
 	}
 }
+
+// func (n *VariableAssign) TypeCheck() {
+// 	n.Value.TypeCheck()
+
+// 	if !n.Identifier.Type().IsCompatible(n.Value.Type()) {
+// 		n.EqPos.MarkError(fmt.Sprintf("cannot assign type %v to %v",
+// 			n.Value.Type(), n.Identifier.Type()))
+// 	}
+// }

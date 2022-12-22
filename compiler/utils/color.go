@@ -1,10 +1,10 @@
-package color
+package utils
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/patrick-jessen/script/config"
+	"github.com/patrick-jessen/script/compiler/config"
 )
 
 type color int

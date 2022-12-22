@@ -1,8 +1,8 @@
 package nodes
 
 import (
-	"github.com/patrick-jessen/script/utils/ast"
-	"github.com/patrick-jessen/script/utils/file"
+	"github.com/patrick-jessen/script/compiler/ast"
+	"github.com/patrick-jessen/script/compiler/file"
 )
 
 type Divide struct {
@@ -11,17 +11,10 @@ type Divide struct {
 	OpPos file.Pos
 }
 
-func (n *Divide) Pos() file.Pos {
-	return n.LHS.Pos()
-}
-
-func (n *Divide) Children() []ast.Node {
-	return []ast.Node{n.LHS, n.RHS}
-}
-
-func (n *Divide) Type() ast.Type {
-	return n.LHS.Type()
-}
-
-func (n *Divide) TypeCheck() {
+func (n *Divide) Info() ast.NodeInfo {
+	return ast.NodeInfo{
+		Type:     "divide",
+		Pos:      n.OpPos,
+		Children: []ast.Node{n.LHS, n.RHS},
+	}
 }

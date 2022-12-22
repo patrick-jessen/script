@@ -4,7 +4,7 @@ import (
 	"unicode"
 
 	"github.com/patrick-jessen/script/compiler"
-	"github.com/patrick-jessen/script/utils/token"
+	"github.com/patrick-jessen/script/compiler/token"
 
 	"github.com/patrick-jessen/script/lang/jlang/tokens"
 )
@@ -18,12 +18,10 @@ func (l *JLang) Scan(s compiler.LanguageScanner) token.Token {
 	}
 
 	switch s.Next() {
-	case ' ':
+	case ' ', '\t', '\r', '\n':
 		s.Consume()
 		return s.Skip()
-	case '\t':
-		s.Consume()
-		return s.Skip()
+
 	case '(':
 		s.Consume()
 		return s.Token(tokens.ParentStart)
@@ -50,7 +48,7 @@ func (l *JLang) Scan(s compiler.LanguageScanner) token.Token {
 		return s.Token(tokens.Asterisk)
 	case '/':
 		s.Consume()
-		if s.Next() == '/' || s.Next() == '*' {
+		if s.NextIs('/') || s.NextIs('*') {
 			return l.scanComment(s)
 		}
 		return s.Token(tokens.Slash)
@@ -62,12 +60,6 @@ func (l *JLang) Scan(s compiler.LanguageScanner) token.Token {
 		return s.Token(tokens.Dot)
 	case '"':
 		return l.scanString(s)
-	case '\r':
-		s.Consume()
-		return s.Skip()
-	case '\n':
-		s.Consume()
-		return s.Skip()
 	default:
 		s.Consume()
 		return s.Error("unexpected token")
@@ -76,8 +68,8 @@ func (l *JLang) Scan(s compiler.LanguageScanner) token.Token {
 
 func (l *JLang) scanComment(s compiler.LanguageScanner) token.Token {
 	// first slash is already consumed
-	if s.Next() == '/' {
-		for s.Next() != '\n' {
+	if s.NextIs('/') {
+		for !s.NextIs('\n') {
 			if !s.Consume() {
 				break
 			}
@@ -91,16 +83,12 @@ func (l *JLang) scanComment(s compiler.LanguageScanner) token.Token {
 		if !s.Consume() {
 			break
 		}
-		if s.Next() == '/' {
-			s.Consume()
-			if s.Next() == '*' {
-				s.Consume()
+		if s.ConsumeChar('/') {
+			if s.ConsumeChar('*') {
 				depth++
 			}
-		} else if s.Next() == '*' {
-			s.Consume()
-			if s.Next() == '/' {
-				s.Consume()
+		} else if s.ConsumeChar('*') {
+			if s.ConsumeChar('/') {
 				depth--
 			}
 		}
@@ -109,9 +97,9 @@ func (l *JLang) scanComment(s compiler.LanguageScanner) token.Token {
 }
 
 func (l *JLang) scanString(s compiler.LanguageScanner) token.Token {
-	s.Consume()
+	s.ConsumeChar('"')
 	s.StartCapture()
-	for s.Next() != '"' {
+	for !s.NextIs('"') {
 		if !s.Consume() {
 			return s.Error("expected \"")
 		}
@@ -152,7 +140,7 @@ func (l *JLang) scanNumber(s compiler.LanguageScanner) token.Token {
 	}
 	capture1 := s.StopCapture()
 
-	if s.Next() != '.' {
+	if !s.NextIs('.') {
 		return s.TokenVal(tokens.Integer, capture1)
 	}
 

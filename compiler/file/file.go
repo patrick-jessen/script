@@ -11,15 +11,15 @@ type File struct {
 }
 
 // Load loads a source file from disk
-func Load(path string) *File {
+func Load(path string) (*File, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	return &File{
 		Path:   path,
 		Source: []rune(string(b)),
-	}
+	}, nil
 }
 
 // Contents returns the file contents as a string

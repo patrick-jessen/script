@@ -5,8 +5,10 @@ import (
 	"os"
 
 	"github.com/patrick-jessen/script/compiler"
-	"github.com/patrick-jessen/script/config"
+	"github.com/patrick-jessen/script/compiler/config"
+
 	"github.com/patrick-jessen/script/lang/jlang"
+	"github.com/patrick-jessen/script/lang/jsonlang"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +19,11 @@ var rootCmd = &cobra.Command{
 	CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 }
 
+var languages = map[string]compiler.Compiler{
+	"json":  &jsonlang.JSONLanguage{},
+	"jlang": &jlang.JLang{},
+}
+
 func init() {
 	buildCmd := &cobra.Command{
 		Use:   "build [path]",
@@ -24,38 +31,36 @@ func init() {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Extract arguments
-			dir := args[0]
+			path := args[0]
+			inputLang, _ := cmd.Flags().GetString("lang")
+			outputFile, _ := cmd.Flags().GetString("output")
+			outputFormat, _ := cmd.Flags().GetString("format")
+			config.NoColor, _ = cmd.Flags().GetBool("no-color")
+			config.DebugTokens, _ = cmd.Flags().GetBool("debug-tokens")
+			config.DebugAST, _ = cmd.Flags().GetBool("debug-ast")
 
-			output, _ := cmd.Flags().GetString("output")
-			format, _ := cmd.Flags().GetString("format")
-			if format != "wat" && format != "wasm" {
+			lang, ok := languages[inputLang]
+			if !ok {
+				return fmt.Errorf("unsupported language")
+			}
+			if outputFormat != "wat" && outputFormat != "wasm" {
 				return fmt.Errorf("unsupported format")
 			}
 
-			debugTokens, _ := cmd.Flags().GetBool("debug-tokens")
-			debugAST, _ := cmd.Flags().GetBool("debug-ast")
-			noColor, _ := cmd.Flags().GetBool("no-color")
-			config.DebugTokens = debugTokens
-			config.DebugAST = debugAST
-			config.NoColor = noColor
-
 			// Run the compiler
-			analyzer := compiler.NewAnalyzer(dir, &jlang.JLang{})
-			err := analyzer.Run()
-			if err != nil {
+			generatedOutput := lang.Compile(path)
+			if generatedOutput == nil {
 				os.Exit(1)
 			}
 
-			generatedOutput := []byte("<generated output>")
-
 			// Ouput the result
-			if len(output) > 0 {
-				err := os.WriteFile(output, generatedOutput, 0666)
+			if len(outputFile) > 0 {
+				err := os.WriteFile(outputFile, generatedOutput, 0666)
 				if err != nil {
 					return err
 				}
 			} else {
-				if format == "wat" {
+				if outputFormat == "wat" {
 					fmt.Println(string(generatedOutput))
 				} else {
 					os.Stdout.Write(generatedOutput)
@@ -64,6 +69,7 @@ func init() {
 			return nil
 		},
 	}
+	buildCmd.Flags().StringP("lang", "l", "jlang", `Input langugage`)
 	buildCmd.Flags().StringP("format", "f", "wat", `Output format ["wasm", "wat"]`)
 	buildCmd.Flags().StringP("output", "o", "", "Output file (if not specified output is written to stdout)")
 	buildCmd.Flags().Bool("no-color", false, `Disable color in debug output`)

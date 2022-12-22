@@ -1,8 +1,8 @@
 package token
 
 import (
-	"github.com/patrick-jessen/script/utils/color"
-	"github.com/patrick-jessen/script/utils/file"
+	"github.com/patrick-jessen/script/compiler/file"
+	"github.com/patrick-jessen/script/compiler/utils"
 )
 
 const (
@@ -21,5 +21,5 @@ type Token struct {
 
 // String returns a pretty formatting of the token
 func (t Token) String() string {
-	return color.NewString("%v %v", color.Green(t.Type), color.Yellow(t.Value)).String()
+	return utils.NewString("%v %v", utils.Green(t.Type), utils.Yellow(t.Value)).String()
 }

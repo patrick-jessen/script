@@ -1,23 +1,23 @@
 package compiler
 
 import (
-	"github.com/patrick-jessen/script/utils/file"
-	"github.com/patrick-jessen/script/utils/token"
+	"github.com/patrick-jessen/script/compiler/file"
+	"github.com/patrick-jessen/script/compiler/token"
 )
 
 // Scanner is used for tokenizing a source file
 type Scanner struct {
-	lang     Language
-	file     *file.File  // the source file
-	iter     int         // current index into the source string
-	captures []int       // start indices of captures
-	char     rune        // current character
-	token    token.Token // current token
-
+	lang       ScannerImpl
+	file       *file.File  // the source file
+	iter       int         // current index into the source string
+	captures   []int       // start indices of captures
+	char       rune        // current character
+	token      token.Token // current token
+	tokenStart int
 }
 
 // NewScanner creates a new scanner
-func NewScanner(lang Language, file *file.File) *Scanner {
+func NewScanner(lang ScannerImpl, file *file.File) *Scanner {
 	s := &Scanner{file: file, lang: lang}
 	s.Reset()
 	return s
@@ -30,10 +30,26 @@ func (s *Scanner) Reset() {
 	s.Consume()
 }
 
+// Scan scans the entire file
+func (s *Scanner) Scan() []token.Token {
+	var out []token.Token
+	t := s.NextToken()
+	for {
+		out = append(out, t)
+		if t.Type == token.EOF {
+			break
+		}
+		t = s.NextToken()
+	}
+	return out
+}
+
 // NextToken scans the next token
 func (s *Scanner) NextToken() token.Token {
 	for !s.checkEOF() {
+		s.tokenStart = s.iter
 		s.token = s.lang.Scan(s)
+		s.token.Pos = s.file.NewPos(s.tokenStart)
 		s.captures = nil
 
 		if s.token.Type != token.Skip {
@@ -62,16 +78,28 @@ func (s *Scanner) Consume() bool {
 	return true
 }
 
+// ConsumeChar attempts to consume a specific character
+func (s *Scanner) ConsumeChar(char rune) bool {
+	if s.NextIs(char) {
+		return s.Consume()
+	}
+	return false
+}
+
 // Next returns the next character in the source
 func (s *Scanner) Next() rune {
 	return s.char
+}
+
+// NextIs returns whether the next character in the source is of a certain value
+func (s *Scanner) NextIs(char rune) bool {
+	return s.char == char
 }
 
 // Token creates a new token
 func (s *Scanner) Token(typ string) token.Token {
 	return token.Token{
 		Type: typ,
-		Pos:  s.file.NewPos(s.iter),
 	}
 }
 
@@ -80,7 +108,6 @@ func (s *Scanner) TokenVal(typ string, value string) token.Token {
 	return token.Token{
 		Type:  typ,
 		Value: value,
-		Pos:   s.file.NewPos(s.iter),
 	}
 }
 
@@ -91,7 +118,7 @@ func (s *Scanner) Skip() token.Token {
 
 // Error creates a new error token
 func (s *Scanner) Error(format string, args ...interface{}) token.Token {
-	s.file.NewPos(s.iter).MarkError(format, args...)
+	s.file.NewPos(s.tokenStart).MarkError(format, args...)
 	return s.Skip()
 }
 

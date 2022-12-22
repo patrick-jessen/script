@@ -1,0 +1,8 @@
+{
+  "other": {
+    "inner": [true, false]
+  },
+  "value": 42,
+  "nullval": null,
+  "strval": "test"
+}

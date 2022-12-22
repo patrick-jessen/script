@@ -4,20 +4,20 @@ import (
 	"fmt"
 
 	"github.com/patrick-jessen/script/compiler"
+	"github.com/patrick-jessen/script/compiler/ast"
+	"github.com/patrick-jessen/script/compiler/token"
 	"github.com/patrick-jessen/script/lang/jlang/nodes"
 	"github.com/patrick-jessen/script/lang/jlang/tokens"
-	"github.com/patrick-jessen/script/utils/ast"
-	"github.com/patrick-jessen/script/utils/token"
 )
 
 func (l *JLang) Parse(p compiler.LanguageParser) ast.Node {
 	node := &nodes.File{}
 
-	for p.Is(tokens.Import) {
+	for p.NextIs(tokens.Import) {
 		l.parseImport(p)
 	}
 
-	for !p.Is(token.EOF) {
+	for !p.NextIs(token.EOF) {
 		decl := l.parseDeclaration(p)
 		if decl != nil {
 			node.Declarations = append(node.Declarations, decl)
@@ -34,7 +34,7 @@ func (l *JLang) parseFunctionCallArgs(p compiler.LanguageParser) *nodes.Function
 		expr := l.parseExpression(p)
 		node.Args = append(node.Args, expr)
 
-		if !p.Is(tokens.Comma) {
+		if !p.NextIs(tokens.Comma) {
 			break
 		}
 		p.Consume()
@@ -47,12 +47,12 @@ func (l *JLang) parseFunctionCall(p compiler.LanguageParser, ident *nodes.Identi
 	node := &nodes.FunctionCall{}
 
 	node.Identifier = ident
-	p.Expect(tokens.ParentStart)
-	if !p.Is(tokens.ParentEnd) {
+	p.ConsumeType(tokens.ParentStart)
+	if !p.NextIs(tokens.ParentEnd) {
 		node.Args = l.parseFunctionCallArgs(p)
 	}
 	node.LastParentPos = p.Next().Pos
-	p.Expect(tokens.ParentEnd)
+	p.ConsumeType(tokens.ParentEnd)
 	// TODO:
 	// p.Resolve(node.Identifier)
 	return node
@@ -63,7 +63,7 @@ func (l *JLang) parseVariableAssign(p compiler.LanguageParser, ident *nodes.Iden
 
 	node.Identifier = ident
 	node.EqPos = p.Next().Pos
-	p.Expect(tokens.Equal)
+	p.ConsumeType(tokens.Equal)
 	node.Value = l.parseExpression(p)
 
 	// TODO:
@@ -77,7 +77,7 @@ func (l *JLang) parseStatement(p compiler.LanguageParser) (n ast.Node) {
 		n = l.parseVariableDecl(p)
 	case tokens.Identifier:
 		ident := l.parseIdentifier(p)
-		if p.Is(tokens.ParentStart) {
+		if p.NextIs(tokens.ParentStart) {
 			n = l.parseFunctionCall(p, ident)
 		} else {
 			n = l.parseVariableAssign(p, ident)
@@ -93,14 +93,14 @@ func (l *JLang) parseStatement(p compiler.LanguageParser) (n ast.Node) {
 func (l *JLang) parseBlock(p compiler.LanguageParser) *nodes.Block {
 	node := &nodes.Block{}
 
-	p.Expect(tokens.CurlStart)
-	for !p.Is(tokens.CurlEnd) {
+	p.ConsumeType(tokens.CurlStart)
+	for !p.NextIs(tokens.CurlEnd) {
 		stmt := l.parseStatement(p)
 		if stmt != nil {
 			node.Statements = append(node.Statements, stmt)
 		}
 	}
-	p.Expect(tokens.CurlEnd)
+	p.ConsumeType(tokens.CurlEnd)
 	return node
 }
 
@@ -126,9 +126,9 @@ loop:
 		case tokens.Float:
 			val = l.parseFloat(p)
 		case tokens.ParentStart:
-			p.Expect(tokens.ParentStart)
+			p.ConsumeType(tokens.ParentStart)
 			val = l.parseExpression(p)
-			p.Expect(tokens.ParentEnd)
+			p.ConsumeType(tokens.ParentEnd)
 		default:
 			p.Next().Pos.MarkError("expected expression")
 			return nil
@@ -217,19 +217,19 @@ loop:
 
 func (l *JLang) parseInteger(p compiler.LanguageParser) *nodes.Integer {
 	node := &nodes.Integer{Token: p.Next()}
-	p.Expect(tokens.Integer)
+	p.ConsumeType(tokens.Integer)
 	return node
 }
 
 func (l *JLang) parseFloat(p compiler.LanguageParser) *nodes.Float {
 	node := &nodes.Float{Token: p.Next()}
-	p.Expect(tokens.Float)
+	p.ConsumeType(tokens.Float)
 	return node
 }
 
 func (l *JLang) parseString(p compiler.LanguageParser) *nodes.String {
 	node := &nodes.String{Token: p.Next()}
-	p.Expect(tokens.String)
+	p.ConsumeType(tokens.String)
 	return node
 }
 
@@ -237,13 +237,13 @@ func (l *JLang) parseIdentifier(p compiler.LanguageParser) *nodes.Identifier {
 	node := &nodes.Identifier{}
 
 	ident := p.Next()
-	p.Expect(tokens.Identifier)
+	p.ConsumeType(tokens.Identifier)
 
-	if p.Is(tokens.Dot) {
+	if p.NextIs(tokens.Dot) {
 		p.Consume()
 		node.Module = ident
 		node.Symbol = p.Next()
-		p.Expect(tokens.Identifier)
+		p.ConsumeType(tokens.Identifier)
 	} else {
 		node.Symbol = ident
 	}
@@ -256,16 +256,16 @@ func (l *JLang) parseFunctionDeclArgs(p compiler.LanguageParser) []*nodes.Identi
 
 	for {
 		ident := l.parseIdentifier(p)
-		ident.Obj = &nodes.Object{}
-		ident.Typ = ast.Type{
-			IsResolved: true,
-			Return:     p.Next().Value,
-		}
-		p.Expect(tokens.Identifier)
+		// ident.Obj = &nodes.Object{}
+		// ident.Typ = ast.Type{
+		// 	IsResolved: true,
+		// 	Return:     p.Next().Value,
+		// }
+		p.ConsumeType(tokens.Identifier)
 
 		ret = append(ret, ident)
 
-		if !p.Is(tokens.Comma) {
+		if !p.NextIs(tokens.Comma) {
 			break
 		}
 		p.Consume()
@@ -273,29 +273,29 @@ func (l *JLang) parseFunctionDeclArgs(p compiler.LanguageParser) []*nodes.Identi
 	return ret
 }
 
-func (l *JLang) parseType(p compiler.LanguageParser) ast.Type {
-	// TODO:
-	typ := ast.Type{
-		IsResolved: true,
-	}
+// func (l *JLang) parseType(p compiler.LanguageParser) ast.Type {
+// 	// TODO:
+// 	// typ := ast.Type{
+// 	// 	IsResolved: true,
+// 	// }
 
-	typ.Return = p.Next().Value
-	p.Expect(tokens.Identifier)
-	return typ
-}
+// 	typ.Return = p.Next().Value
+// 	p.ConsumeType(tokens.Identifier)
+// 	return typ
+// }
 
 func (l *JLang) parseFunctionDecl(p compiler.LanguageParser) *nodes.FunctionDecl {
-	obj := &nodes.Object{}
+	// obj := &nodes.Object{}
 	node := &nodes.FunctionDecl{}
 
-	p.Expect(tokens.Func)
+	p.ConsumeType(tokens.Func)
 	node.Identifier = l.parseIdentifier(p)
-	node.Identifier.Obj = obj
-	p.Expect(tokens.ParentStart)
-	if !p.Is(tokens.ParentEnd) {
+	// node.Identifier.Obj = obj
+	p.ConsumeType(tokens.ParentStart)
+	if !p.NextIs(tokens.ParentEnd) {
 		node.Args = l.parseFunctionDeclArgs(p)
 	}
-	p.Expect(tokens.ParentEnd)
+	p.ConsumeType(tokens.ParentEnd)
 
 	// TODO:
 	// p.PushScope()
@@ -311,16 +311,16 @@ func (l *JLang) parseFunctionDecl(p compiler.LanguageParser) *nodes.FunctionDecl
 	return node
 }
 func (l *JLang) parseVariableDecl(p compiler.LanguageParser) *nodes.VariableDecl {
-	obj := &nodes.Object{}
+	// obj := &nodes.Object{}
 	node := &nodes.VariableDecl{}
 
-	p.Expect(tokens.Var)
+	p.ConsumeType(tokens.Var)
 	node.Identifier = l.parseIdentifier(p)
-	node.Identifier.Obj = obj
-	if !p.Is(tokens.Equal) {
-		node.Identifier.Typ = l.parseType(p)
+	// node.Identifier.Obj = obj
+	if !p.NextIs(tokens.Equal) {
+		// node.Identifier.Typ = l.parseType(p)
 	}
-	p.Expect(tokens.Equal)
+	p.ConsumeType(tokens.Equal)
 	node.Value = l.parseExpression(p)
 
 	// TODO:
@@ -328,7 +328,7 @@ func (l *JLang) parseVariableDecl(p compiler.LanguageParser) *nodes.VariableDecl
 	return node
 }
 
-func (l *JLang) parseDeclaration(p compiler.LanguageParser) (n ast.Node) {
+func (l *JLang) parseDeclaration(p compiler.LanguageParser) nodes.Declarable {
 	switch p.Next().Type {
 	case tokens.Func:
 		return l.parseFunctionDecl(p)
@@ -344,117 +344,117 @@ func (l *JLang) parseImport(p compiler.LanguageParser) {
 	var alias token.Token
 	var module token.Token
 
-	p.Expect(tokens.Import)
-	if p.Is(tokens.Identifier) {
+	p.ConsumeType(tokens.Import)
+	if p.NextIs(tokens.Identifier) {
 		alias = p.Next()
 		p.Consume()
 	}
 	module = p.Next()
-	p.Expect(tokens.String)
+	p.ConsumeType(tokens.String)
 	fmt.Println("Import", alias, module)
 
 	// TODO:
 	// p.ImportModule(parser.Import{Alias: alias, Module: module})
 }
 
-// rootScope *Scope // top level scope
-// curScope  *Scope // current scope
+// // rootScope *Scope // top level scope
+// // curScope  *Scope // current scope
 
-// Unresolved      []ast.Node // unresolved module-local symbols
-// Imports         []ast.Node // imported symbols
-// ImportedModules []Import   // names of imported modules
+// // Unresolved      []ast.Node // unresolved module-local symbols
+// // Imports         []ast.Node // imported symbols
+// // ImportedModules []Import   // names of imported modules
 
-// func (p *Parser) Symbols() map[string]ast.Node {
-// 	return p.rootScope.symbols
-// }
+// // func (p *Parser) Symbols() map[string]ast.Node {
+// // 	return p.rootScope.symbols
+// // }
 
-// type Scope struct {
-// 	parent  *Scope
-// 	symbols map[string]ast.Node
-// }
+// // type Scope struct {
+// // 	parent  *Scope
+// // 	symbols map[string]ast.Node
+// // }
 
-// func NewScope(parent *Scope) *Scope {
-// 	return &Scope{
-// 		parent:  parent,
-// 		symbols: make(map[string]ast.Node),
-// 	}
-// }
+// // func NewScope(parent *Scope) *Scope {
+// // 	return &Scope{
+// // 		parent:  parent,
+// // 		symbols: make(map[string]ast.Node),
+// // 	}
+// // }
 
-// func (p *Parser) Declare(d ast.Declarable) {
-// 	name := d.Name()
-// 	sym, ok := p.curScope.symbols[name]
-// 	if ok {
-// 		d.Pos().MarkError("redeclaration of symbol '%v'. First declared here: (%v)",
-// 			name, sym.Pos().Info().Link(),
-// 		)
-// 		return
-// 	}
-// 	p.curScope.symbols[name] = d
-// }
-// func (p *Parser) Resolve(ident *ast.Identifier) {
-// 	mod := ident.Module.Value
-// 	scope := p.curScope
+// // func (p *Parser) Declare(d ast.Declarable) {
+// // 	name := d.Name()
+// // 	sym, ok := p.curScope.symbols[name]
+// // 	if ok {
+// // 		d.Pos().MarkError("redeclaration of symbol '%v'. First declared here: (%v)",
+// // 			name, sym.Pos().Info().Link(),
+// // 		)
+// // 		return
+// // 	}
+// // 	p.curScope.symbols[name] = d
+// // }
+// // func (p *Parser) Resolve(ident *ast.Identifier) {
+// // 	mod := ident.Module.Value
+// // 	scope := p.curScope
 
-// 	if len(mod) == 0 {
-// 		// the symbol belongs to this module
-// 		for scope != nil {
-// 			sym, ok := scope.symbols[ident.Symbol.Value]
-// 			if ok {
-// 				ident.Typ = sym.Type()
-// 				ident.Obj = sym.Ident().Obj
-// 				return
-// 			}
-// 			scope = scope.parent
-// 		}
-// 		// cannot be resolved yet
-// 		p.Unresolved = append(p.Unresolved, ident)
+// // 	if len(mod) == 0 {
+// // 		// the symbol belongs to this module
+// // 		for scope != nil {
+// // 			sym, ok := scope.symbols[ident.Symbol.Value]
+// // 			if ok {
+// // 				ident.Typ = sym.Type()
+// // 				ident.Obj = sym.Ident().Obj
+// // 				return
+// // 			}
+// // 			scope = scope.parent
+// // 		}
+// // 		// cannot be resolved yet
+// // 		p.Unresolved = append(p.Unresolved, ident)
 
-// 	} else {
-// 		// the symbol belongs to another module.
-// 		// assert that the particular module is imported.
-// 		for _, i := range p.ImportedModules {
-// 			if i.Alias.ID != token.Invalid {
-// 				if i.Alias.Value == mod {
-// 					ident.Module.Value = i.Module.Value
-// 					p.Imports = append(p.Imports, ident)
-// 					return
-// 				}
-// 			} else if i.Module.Value == mod {
-// 				p.Imports = append(p.Imports, ident)
-// 				return
-// 			}
-// 		}
-// 		ident.Module.Pos.MarkError("module '%v' not imported", ident.Module.Value)
-// 	}
-// }
+// // 	} else {
+// // 		// the symbol belongs to another module.
+// // 		// assert that the particular module is imported.
+// // 		for _, i := range p.ImportedModules {
+// // 			if i.Alias.ID != token.Invalid {
+// // 				if i.Alias.Value == mod {
+// // 					ident.Module.Value = i.Module.Value
+// // 					p.Imports = append(p.Imports, ident)
+// // 					return
+// // 				}
+// // 			} else if i.Module.Value == mod {
+// // 				p.Imports = append(p.Imports, ident)
+// // 				return
+// // 			}
+// // 		}
+// // 		ident.Module.Pos.MarkError("module '%v' not imported", ident.Module.Value)
+// // 	}
+// // }
 
-// type Import struct {
-// 	Alias  token.Token
-// 	Module token.Token
-// }
+// // type Import struct {
+// // 	Alias  token.Token
+// // 	Module token.Token
+// // }
 
-// func (p *Parser) ImportModule(imp Import) {
-// 	idTok := imp.Alias
-// 	if idTok.ID == token.Invalid {
-// 		idTok = imp.Module
-// 	}
+// // func (p *Parser) ImportModule(imp Import) {
+// // 	idTok := imp.Alias
+// // 	if idTok.ID == token.Invalid {
+// // 		idTok = imp.Module
+// // 	}
 
-// 	for _, i := range p.ImportedModules {
-// 		t := i.Alias
-// 		if t.ID == token.Invalid {
-// 			t = i.Module
-// 		}
+// // 	for _, i := range p.ImportedModules {
+// // 		t := i.Alias
+// // 		if t.ID == token.Invalid {
+// // 			t = i.Module
+// // 		}
 
-// 		if idTok.Value == t.Value {
-// 			idTok.Pos.MarkError("duplicate import '%v'", idTok.Value)
-// 		}
-// 	}
-// 	p.ImportedModules = append(p.ImportedModules, imp)
-// }
+// // 		if idTok.Value == t.Value {
+// // 			idTok.Pos.MarkError("duplicate import '%v'", idTok.Value)
+// // 		}
+// // 	}
+// // 	p.ImportedModules = append(p.ImportedModules, imp)
+// // }
 
-// func (p *Parser) PushScope() {
-// 	p.curScope = NewScope(p.curScope)
-// }
-// func (p *Parser) PopScope() {
-// 	p.curScope = p.curScope.parent
-// }
+// // func (p *Parser) PushScope() {
+// // 	p.curScope = NewScope(p.curScope)
+// // }
+// // func (p *Parser) PopScope() {
+// // 	p.curScope = p.curScope.parent
+// // }

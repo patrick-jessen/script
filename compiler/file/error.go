@@ -3,7 +3,7 @@ package file
 import (
 	"fmt"
 
-	"github.com/patrick-jessen/script/utils/color"
+	"github.com/patrick-jessen/script/compiler/utils"
 )
 
 // Error describes an error within a file
@@ -19,8 +19,8 @@ func (se *Error) Error() string {
 
 	return fmt.Sprintf(
 		"%v\t%v\n%v",
-		color.Red("ERROR: "+se.Message),
+		utils.Red("ERROR: "+se.Message),
 		posInfo.Link(),
-		color.Yellow(posInfo),
+		utils.Yellow(posInfo),
 	)
 }

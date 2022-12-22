@@ -1,8 +1,8 @@
 package nodes
 
 import (
-	"github.com/patrick-jessen/script/utils/ast"
-	"github.com/patrick-jessen/script/utils/file"
+	"github.com/patrick-jessen/script/compiler/ast"
+	"github.com/patrick-jessen/script/compiler/file"
 )
 
 type Subtract struct {
@@ -11,17 +11,10 @@ type Subtract struct {
 	OpPos file.Pos
 }
 
-func (n *Subtract) Pos() file.Pos {
-	return n.LHS.Pos()
-}
-
-func (n *Subtract) Children() []ast.Node {
-	return []ast.Node{n.LHS, n.RHS}
-}
-
-func (n *Subtract) Type() ast.Type {
-	return n.LHS.Type()
-}
-
-func (n *Subtract) TypeCheck() {
+func (n *Subtract) Info() ast.NodeInfo {
+	return ast.NodeInfo{
+		Type:     "subtract",
+		Pos:      n.OpPos,
+		Children: []ast.Node{n.LHS, n.RHS},
+	}
 }
